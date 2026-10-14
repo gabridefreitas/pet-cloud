@@ -1,0 +1,6 @@
+main { max-width: 48rem; margin: 4rem auto; padding: 1.5rem; }
+h1 { font-size: 3rem; margin-bottom: 0.5rem; }
+section { margin-top: 2rem; padding: 1.5rem; background: white; border: 1px solid #dce2e6; border-radius: 0.75rem; }
+button { padding: 0.7rem 1rem; background: #176b65; color: white; border: 0; border-radius: 0.4rem; cursor: pointer; }
+button:disabled { opacity: 0.6; cursor: wait; }
+button:focus-visible { outline: 3px solid #172b35; outline-offset: 3px; }

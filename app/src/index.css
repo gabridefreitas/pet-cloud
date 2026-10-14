@@ -1,0 +1,12 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #172b35;
+  background: #f6f8fa;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+body { margin: 0; }
+* { box-sizing: border-box; }
+button { font: inherit; }
