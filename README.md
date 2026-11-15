@@ -41,7 +41,7 @@ cp .env.example .env
 pnpm dev
 ```
 
-Open http://localhost:5173 and use **Check API connection**.
+Open http://localhost:5173. The footer shows whether the API is online.
 API docs are available at http://localhost:8000/docs.
 Visit http://localhost:8000/health/ready to check the database connection.
 Use `docker compose down` to stop the services while keeping database data.

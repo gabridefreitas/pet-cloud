@@ -9,8 +9,12 @@ cp .env.example .env
 pnpm dev
 ```
 
-Open http://localhost:5173. The starter has a button to check the backend's
-`/health` endpoint. It checks API liveness, not PostgreSQL readiness.
+Open http://localhost:5173. The footer shows whether the backend's `/health`
+endpoint responds (API liveness, not PostgreSQL readiness).
+
+Until the API serves the pet endpoints, the catalog uses mock data from
+`src/mocks/` (photos in `public/mock-pets/`). Set `VITE_USE_MOCKS=false` to load
+pets from the API instead.
 
 ```sh
 pnpm lint
