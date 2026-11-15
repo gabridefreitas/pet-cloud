@@ -1,9 +1,10 @@
-import { ChevronRight, RotateCcw, SearchX, SlidersHorizontal } from 'lucide-react'
+import { SlidersHorizontal } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { Pagination } from '../components/pets/Pagination'
 import { PetCard } from '../components/pets/PetCard'
 import { PetFiltersPanel } from '../components/pets/PetFiltersPanel'
+import { Breadcrumbs } from '../components/ui/Breadcrumbs'
+import { EmptyState, ErrorState } from '../components/ui/Feedback'
 import { usePets } from '../hooks/usePets'
 import { DEFAULT_PAGE_SIZE } from '../services/pets'
 import type { PetFilters } from '../types'
@@ -27,7 +28,7 @@ export function AdoptPage() {
   const [draft, setDraft] = useState<PetFilters>({})
   const [applied, setApplied] = useState<PetFilters>({ page: 1 })
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const { data, loading, error, retry } = usePets(applied)
+  const { data, loading, error, reload } = usePets(applied)
 
   const totalPages = data ? Math.ceil(data.total / (data.page_size || DEFAULT_PAGE_SIZE)) : 0
 
@@ -48,17 +49,7 @@ export function AdoptPage() {
 
   return (
     <>
-      <div className="bg-brand-400">
-        <nav aria-label="Breadcrumb" className="mx-auto flex max-w-7xl items-center gap-1 px-4 py-2 text-xs text-white sm:px-6 lg:px-8">
-          <Link to="/" className="hover:underline">
-            Home
-          </Link>
-          <ChevronRight className="size-3" aria-hidden />
-          <span aria-current="page" className="underline">
-            Adopt a pet
-          </span>
-        </nav>
-      </div>
+      <Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: 'Adopt a pet' }]} />
 
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <h1 className="sr-only">Adopt a pet</h1>
@@ -81,18 +72,7 @@ export function AdoptPage() {
 
           <section aria-label="Pets available for adoption" aria-busy={loading} className="min-w-0">
             {error ? (
-              <div role="alert" className="flex flex-col items-center rounded-xl border border-gray-200 px-6 py-16 text-center">
-                <p className="font-medium text-brand-900">We couldn't load the pets.</p>
-                <p className="mt-1 text-sm text-gray-600">{error}</p>
-                <button
-                  type="button"
-                  onClick={retry}
-                  className="mt-5 flex items-center gap-2 rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
-                >
-                  <RotateCcw className="size-4" aria-hidden />
-                  Try again
-                </button>
-              </div>
+              <ErrorState title="We couldn't load the pets." message={error} onRetry={reload} />
             ) : loading && !data ? (
               <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                 {Array.from({ length: 6 }, (_, index) => (
@@ -100,14 +80,11 @@ export function AdoptPage() {
                 ))}
               </div>
             ) : data && data.items.length === 0 ? (
-              <div className="flex flex-col items-center rounded-xl border border-dashed border-gray-300 px-6 py-16 text-center">
-                <SearchX className="size-10 text-brand-300" aria-hidden />
-                <p className="mt-3 font-medium text-brand-900">No pets match these filters.</p>
-                <p className="mt-1 text-sm text-gray-600">Try removing some filters to see more pets.</p>
-                <button type="button" onClick={resetFilters} className="mt-4 text-sm font-medium text-brand-600 hover:underline">
+              <EmptyState title="No pets match these filters." description="Try removing some filters to see more pets.">
+                <button type="button" onClick={resetFilters} className="text-sm font-medium text-brand-600 hover:underline">
                   Reset filters
                 </button>
-              </div>
+              </EmptyState>
             ) : (
               data && (
                 <>

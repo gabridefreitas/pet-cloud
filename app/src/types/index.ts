@@ -168,6 +168,15 @@ export interface AdoptionRequestDecision {
   review_note?: string
 }
 
+/** Public contact data of the adopter, shown to the organization reviewing a request. */
+export type AdopterSummary = Pick<User, 'id' | 'full_name' | 'email' | 'phone' | 'city' | 'state'>
+
+/** Adoption request with the pet and adopter embedded, as returned by list endpoints. */
+export interface AdoptionRequestDetails extends AdoptionRequest {
+  pet: Pet
+  adopter: AdopterSummary
+}
+
 // ---------------------------------------------------------------------------
 // Catalog filters ("Adopt a pet" screen)
 // ---------------------------------------------------------------------------
@@ -207,6 +216,13 @@ export interface Paginated<T> {
 // ---------------------------------------------------------------------------
 
 export interface LoginInput {
+  email: string
+  password: string
+}
+
+/** Self sign-up creates adopter accounts. Organization accounts are created by the team. */
+export interface RegisterInput {
+  full_name: string
   email: string
   password: string
 }

@@ -13,6 +13,13 @@ import { logger } from '../utils/logger'
 
 export const API_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
 
+/**
+ * When true, services answer from the in-memory mock backend in `src/mocks`
+ * instead of calling the API. On by default until the API implements the
+ * adoption endpoints; set `VITE_USE_MOCKS=false` to use the real API.
+ */
+export const USE_MOCKS = import.meta.env.VITE_USE_MOCKS !== 'false'
+
 const DEFAULT_TIMEOUT_MS = 10_000
 const TOKEN_STORAGE_KEY = 'petcloud.access_token'
 

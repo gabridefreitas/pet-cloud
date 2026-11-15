@@ -4,9 +4,29 @@
  *
  * Photos live in `public/mock-pets/` and are reused across cards. In
  * production, photo URLs come from S3 via the API.
+ *
+ * The exported `mock*` functions mirror the pet endpoints of the API,
+ * including its auth checks and HTTP errors. Data lives in memory and resets
+ * on page reload.
  */
-import type { Organization, Paginated, Pet, PetColor, PetFilters, PetSex, PetSize, PetSpecies } from '../types'
+import { ApiError } from '../services/api'
+import type {
+  Organization,
+  Paginated,
+  Pet,
+  PetColor,
+  PetDetails,
+  PetFilters,
+  PetInput,
+  PetPhoto,
+  PetSex,
+  PetSize,
+  PetSpecies,
+  PetStatus,
+} from '../types'
 import { isInAgeGroup } from '../utils/pets'
+import { mockDelay, nowIso } from './delay'
+import { requireMockUser } from './users'
 
 const MOCK_PHOTOS = ['bulldog', 'boston-terrier', 'golden-retriever'] as const
 type MockPhoto = (typeof MOCK_PHOTOS)[number]
@@ -275,25 +295,24 @@ export const mockPets: Pet[] = seeds.map((seed, index) => {
   }
 })
 
-/** The four pets shown in the landing page showcase. */
-export const featuredMockPets = mockPets.slice(0, 4)
-
-/** Simulated network latency so loading states are visible. */
-const MOCK_DELAY_MS = 400
-
-function wait(ms: number, signal?: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(resolve, ms)
-    signal?.addEventListener('abort', () => {
-      clearTimeout(timer)
-      reject(signal.reason)
-    })
-  })
+/** Finds a pet by ID or throws 404, like the API would. */
+export function findMockPet(id: string): Pet {
+  const pet = mockPets.find((candidate) => candidate.id === id)
+  if (!pet) throw new ApiError('Pet not found.', 404, `/pets/${id}`)
+  return pet
 }
 
-/** In-memory version of `GET /pets`, applying the same filters the API will. */
+/** Finds a pet owned by the logged-in organization member (404 otherwise). */
+function findOwnedPet(id: string): Pet {
+  const user = requireMockUser('organization_member')
+  const pet = findMockPet(id)
+  if (pet.organization_id !== user.organization_id) throw new ApiError('Pet not found.', 404, `/pets/${id}`)
+  return pet
+}
+
+/** Mock of `GET /pets`: public catalog, applying the same filters the API will. */
 export async function listMockPets(filters: PetFilters, signal?: AbortSignal): Promise<Paginated<Pet>> {
-  await wait(MOCK_DELAY_MS, signal)
+  await mockDelay(signal)
 
   const location = filters.location?.trim().toLowerCase()
   const status = filters.status ?? 'available'
@@ -313,4 +332,68 @@ export async function listMockPets(filters: PetFilters, signal?: AbortSignal): P
   const pageSize = filters.page_size ?? 9
   const start = (page - 1) * pageSize
   return { items: matches.slice(start, start + pageSize), total: matches.length, page, page_size: pageSize }
+}
+
+/** Mock of `GET /pets/{id}`: public details with the organization embedded. */
+export async function getMockPet(id: string, signal?: AbortSignal): Promise<PetDetails> {
+  await mockDelay(signal)
+  const pet = findMockPet(id)
+  const organization = mockOrganizations.find((org) => org.id === pet.organization_id)
+  if (!organization) throw new ApiError('Organization not found.', 404, `/pets/${id}`)
+  return { ...pet, organization }
+}
+
+/** Mock of `GET /organizations/me/pets`: every pet of the member's organization. */
+export async function listMockOrganizationPets(signal?: AbortSignal): Promise<Pet[]> {
+  await mockDelay(signal)
+  const user = requireMockUser('organization_member')
+  return mockPets
+    .filter((pet) => pet.organization_id === user.organization_id)
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+}
+
+/** Mock of `POST /pets`: creates a pet for the member's organization. */
+export async function createMockPet(input: PetInput, signal?: AbortSignal): Promise<Pet> {
+  await mockDelay(signal)
+  const user = requireMockUser('organization_member')
+  const timestamp = nowIso()
+  const pet: Pet = {
+    ...input,
+    id: `pet-${crypto.randomUUID()}`,
+    organization_id: user.organization_id ?? '',
+    photos: [],
+    created_at: timestamp,
+    updated_at: timestamp,
+  }
+  mockPets.push(pet)
+  return pet
+}
+
+/** Mock of `PATCH /pets/{id}` with `{ status }`. */
+export async function updateMockPetStatus(id: string, status: PetStatus, signal?: AbortSignal): Promise<Pet> {
+  await mockDelay(signal, 250)
+  const pet = findOwnedPet(id)
+  pet.status = status
+  pet.updated_at = nowIso()
+  return pet
+}
+
+/**
+ * Mock of the photo upload flow (presigned URL + S3 PUT + registration).
+ * The file is kept as a local object URL instead of being uploaded.
+ */
+export async function addMockPetPhoto(petId: string, file: File, signal?: AbortSignal): Promise<PetPhoto> {
+  await mockDelay(signal)
+  const pet = findOwnedPet(petId)
+  const photoId = `${petId}-photo-${crypto.randomUUID()}`
+  const photo: PetPhoto = {
+    id: photoId,
+    pet_id: petId,
+    s3_key: `pets/${petId}/${photoId}-${file.name}`,
+    url: URL.createObjectURL(file),
+    is_primary: pet.photos.length === 0,
+    position: pet.photos.length,
+  }
+  pet.photos.push(photo)
+  return photo
 }

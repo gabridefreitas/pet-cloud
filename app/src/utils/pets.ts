@@ -1,10 +1,20 @@
-import type { AgeGroup, Pet, PetColor, PetSex, PetSize } from '../types'
+import type { AgeGroup, HousingType, Pet, PetColor, PetSex, PetSize, PetStatus } from '../types'
 
 /** Pets listed within this many days get the "New" badge. */
 const NEW_PET_DAYS = 7
 
 export const SIZE_LABELS: Record<PetSize, string> = { small: 'Small', medium: 'Medium', large: 'Large' }
 export const SEX_LABELS: Record<PetSex, string> = { male: 'Male', female: 'Female' }
+
+export const HOUSING_LABELS: Record<HousingType, string> = { house: 'House', apartment: 'Apartment', other: 'Other' }
+
+/** Options for the status selector in the organization portal. */
+export const PET_STATUS_OPTIONS: { value: PetStatus; label: string; description: string }[] = [
+  { value: 'available', label: 'Available', description: 'Listed in the catalog' },
+  { value: 'pending', label: 'Pending', description: 'Adoption in progress' },
+  { value: 'adopted', label: 'Adopted', description: 'Found a home' },
+  { value: 'unavailable', label: 'Unavailable', description: 'Temporarily hidden' },
+]
 
 export const COLOR_OPTIONS: { value: PetColor; label: string; swatch: string }[] = [
   { value: 'golden', label: 'Golden', swatch: '#d9a066' },
@@ -63,6 +73,11 @@ export function formatAge(ageMonths: number): string {
   if (ageMonths < 24) return ageMonths === 1 ? '1 month' : `${ageMonths} months`
   const years = Math.floor(ageMonths / 12)
   return `${years} years`
+}
+
+/** Formats an ISO timestamp as a short date, e.g. "Nov 14, 2026". */
+export function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 export function isNewPet(pet: Pet, now = Date.now()): boolean {
