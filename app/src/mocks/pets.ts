@@ -7,7 +7,8 @@
  *
  * The exported `mock*` functions mirror the pet endpoints of the API,
  * including its auth checks and HTTP errors. Data lives in memory and resets
- * on page reload.
+ * on page reload. Handlers return copies (`structuredClone`) so callers never
+ * share the stored objects, just like JSON from a real API.
  */
 import { ApiError } from '../services/api'
 import type {
@@ -310,13 +311,13 @@ function findOwnedPet(id: string): Pet {
   return pet
 }
 
-/** Mock of `GET /pets`: public catalog, applying the same filters the API will. */
+/** Mock of `GET /pets`: public catalog, newest first, applying the same filters the API will. */
 export async function listMockPets(filters: PetFilters, signal?: AbortSignal): Promise<Paginated<Pet>> {
   await mockDelay(signal)
 
   const location = filters.location?.trim().toLowerCase()
   const status = filters.status ?? 'available'
-  const matches = mockPets.filter(
+  const matches = [...mockPets].sort((a, b) => b.created_at.localeCompare(a.created_at)).filter(
     (pet) =>
       pet.status === status &&
       (!filters.species || pet.species === filters.species) &&
@@ -331,7 +332,7 @@ export async function listMockPets(filters: PetFilters, signal?: AbortSignal): P
   const page = filters.page ?? 1
   const pageSize = filters.page_size ?? 9
   const start = (page - 1) * pageSize
-  return { items: matches.slice(start, start + pageSize), total: matches.length, page, page_size: pageSize }
+  return { items: structuredClone(matches.slice(start, start + pageSize)), total: matches.length, page, page_size: pageSize }
 }
 
 /** Mock of `GET /pets/{id}`: public details with the organization embedded. */
@@ -340,7 +341,7 @@ export async function getMockPet(id: string, signal?: AbortSignal): Promise<PetD
   const pet = findMockPet(id)
   const organization = mockOrganizations.find((org) => org.id === pet.organization_id)
   if (!organization) throw new ApiError('Organization not found.', 404, `/pets/${id}`)
-  return { ...pet, organization }
+  return structuredClone({ ...pet, organization })
 }
 
 /** Mock of `GET /organizations/me/pets`: every pet of the member's organization. */
@@ -350,6 +351,7 @@ export async function listMockOrganizationPets(signal?: AbortSignal): Promise<Pe
   return mockPets
     .filter((pet) => pet.organization_id === user.organization_id)
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .map((pet) => structuredClone(pet))
 }
 
 /** Mock of `POST /pets`: creates a pet for the member's organization. */
@@ -366,7 +368,7 @@ export async function createMockPet(input: PetInput, signal?: AbortSignal): Prom
     updated_at: timestamp,
   }
   mockPets.push(pet)
-  return pet
+  return structuredClone(pet)
 }
 
 /** Mock of `PATCH /pets/{id}` with `{ status }`. */
@@ -375,7 +377,7 @@ export async function updateMockPetStatus(id: string, status: PetStatus, signal?
   const pet = findOwnedPet(id)
   pet.status = status
   pet.updated_at = nowIso()
-  return pet
+  return structuredClone(pet)
 }
 
 /**
@@ -395,5 +397,5 @@ export async function addMockPetPhoto(petId: string, file: File, signal?: AbortS
     position: pet.photos.length,
   }
   pet.photos.push(photo)
-  return photo
+  return structuredClone(photo)
 }

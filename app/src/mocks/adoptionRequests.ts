@@ -91,7 +91,7 @@ function adopterSummary(adopterId: string): AdopterSummary {
 /** Embeds the pet and adopter, newest requests first. */
 function withDetails(requests: AdoptionRequest[]): AdoptionRequestDetails[] {
   return requests
-    .map((request) => ({ ...request, pet: findMockPet(request.pet_id), adopter: adopterSummary(request.adopter_id) }))
+    .map((request) => structuredClone({ ...request, pet: findMockPet(request.pet_id), adopter: adopterSummary(request.adopter_id) }))
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
 }
 
@@ -128,7 +128,7 @@ export async function createMockAdoptionRequest(
     updated_at: timestamp,
   }
   mockAdoptionRequests.push(request)
-  return request
+  return structuredClone(request)
 }
 
 /** Mock of `GET /adoption-requests/me`: the adopter's own requests. */
@@ -175,5 +175,5 @@ export async function decideMockAdoptionRequest(
     pet.status = 'pending'
     pet.updated_at = timestamp
   }
-  return request
+  return structuredClone(request)
 }

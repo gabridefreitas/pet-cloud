@@ -7,6 +7,8 @@ import { LoginPage } from './pages/auth/LoginPage'
 import { RegisterPage } from './pages/auth/RegisterPage'
 import { MyRequestsPage } from './pages/MyRequestsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { DashboardPage } from './pages/organization/DashboardPage'
+import { PetFormPage } from './pages/organization/PetFormPage'
 import { PetDetailsPage } from './pages/PetDetailsPage'
 
 /**
@@ -30,6 +32,22 @@ function App() {
               element={
                 <RequireAuth role="adopter">
                   <MyRequestsPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="organization"
+              element={
+                <RequireAuth role="organization_member">
+                  <DashboardPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="organization/pets/new"
+              element={
+                <RequireAuth role="organization_member">
+                  <PetFormPage />
                 </RequireAuth>
               }
             />

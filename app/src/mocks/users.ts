@@ -116,5 +116,5 @@ export async function mockRegister(input: RegisterInput, signal?: AbortSignal): 
 /** Mock of `GET /auth/me`. */
 export async function mockGetCurrentUser(signal?: AbortSignal): Promise<User> {
   await mockDelay(signal, 150)
-  return requireMockUser()
+  return structuredClone(requireMockUser())
 }

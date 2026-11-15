@@ -29,7 +29,7 @@ export const DEFAULT_PAGE_SIZE = 9
 export const PHOTO_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 export const PHOTO_MAX_BYTES = 5 * 1024 * 1024
 
-/** `GET /pets` — public catalog (available pets) with filters and pagination. */
+/** `GET /pets` — public catalog (available pets, newest first) with filters and pagination. */
 export function listPets(filters: PetFilters, signal?: AbortSignal): Promise<Paginated<Pet>> {
   const query: PetFilters = { page: 1, page_size: DEFAULT_PAGE_SIZE, ...filters }
   if (USE_MOCKS) return listMockPets(query, signal)
