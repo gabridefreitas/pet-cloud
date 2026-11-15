@@ -56,5 +56,8 @@ The API runs on EC2 and connects to RDS PostgreSQL. A separate S3 bucket
 stores pet images. CloudWatch collects backend logs; CloudWatch RUM handles
 browser errors once configured. See `aws/README.md` for the deployment plan.
 
-This is a development starter. Authentication, adoption features, schema
-migrations, AWS resources, and monitoring integration are not implemented yet.
+The web app implements the adoption workflow (catalog, pet details, adoption
+requests, login, and the organization portal) against an in-memory mock
+backend. The API endpoints it expects are listed in `app/README.md`. API
+authentication and adoption endpoints, schema migrations, AWS resources, and
+monitoring integration are not implemented yet.
