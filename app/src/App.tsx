@@ -1,42 +1,63 @@
-import { useState } from 'react'
-import './App.css'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { AuthProvider } from './components/AuthProvider'
+import { Layout } from './components/layout/Layout'
+import { RequireAuth } from './components/RequireAuth'
+import { AboutPage } from './pages/AboutPage'
+import { AdoptPage } from './pages/AdoptPage'
+import { LoginPage } from './pages/auth/LoginPage'
+import { RegisterPage } from './pages/auth/RegisterPage'
+import { HomePage } from './pages/HomePage'
+import { MyRequestsPage } from './pages/MyRequestsPage'
+import { NotFoundPage } from './pages/NotFoundPage'
+import { DashboardPage } from './pages/organization/DashboardPage'
+import { PetFormPage } from './pages/organization/PetFormPage'
+import { PetDetailsPage } from './pages/PetDetailsPage'
 
-const apiUrl = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
-
+/**
+ * Route map. Pages for logged-in users are wrapped in `RequireAuth`.
+ * In AWS, CloudFront must rewrite these paths to `/index.html` (see aws/README.md).
+ */
 function App() {
-  const [status, setStatus] = useState('Not checked')
-  const [checking, setChecking] = useState(false)
-
-  async function checkApi() {
-    setChecking(true)
-    setStatus('Checking…')
-    try {
-      const response = await fetch(`${apiUrl}/health`, { signal: AbortSignal.timeout(5000) })
-      if (!response.ok) throw new Error('API request failed')
-      const data: unknown = await response.json()
-      if (typeof data !== 'object' || data === null || !('status' in data) || data.status !== 'ok') {
-        throw new Error('Unexpected API response')
-      }
-      setStatus('API is online')
-    } catch {
-      setStatus('Could not reach the API. Check that the backend is running.')
-    } finally {
-      setChecking(false)
-    }
-  }
-
   return (
-    <main>
-      <h1>PetCloud</h1>
-      <p>Connecting pets with their future families.</p>
-      <section aria-labelledby="connection-heading">
-        <h2 id="connection-heading">Development starter</h2>
-        <button type="button" disabled={checking} onClick={checkApi}>
-          {checking ? 'Checking…' : 'Check API connection'}
-        </button>
-        <p role="status">{status}</p>
-      </section>
-    </main>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route index element={<HomePage />} />
+            <Route path="about" element={<AboutPage />} />
+            <Route path="adopt" element={<AdoptPage />} />
+            <Route path="pets/:id" element={<PetDetailsPage />} />
+            <Route path="login" element={<LoginPage />} />
+            <Route path="register" element={<RegisterPage />} />
+            <Route
+              path="my-requests"
+              element={
+                <RequireAuth role="adopter">
+                  <MyRequestsPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="organization"
+              element={
+                <RequireAuth role="organization_member">
+                  <DashboardPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="organization/pets/new"
+              element={
+                <RequireAuth role="organization_member">
+                  <PetFormPage />
+                </RequireAuth>
+              }
+            />
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
 

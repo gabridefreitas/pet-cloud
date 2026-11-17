@@ -41,7 +41,7 @@ cp .env.example .env
 pnpm dev
 ```
 
-Open http://localhost:5173 and use **Check API connection**.
+Open http://localhost:5173. The footer shows whether the API is online.
 API docs are available at http://localhost:8000/docs.
 Visit http://localhost:8000/health/ready to check the database connection.
 Use `docker compose down` to stop the services while keeping database data.
@@ -56,5 +56,8 @@ The API runs on EC2 and connects to RDS PostgreSQL. A separate S3 bucket
 stores pet images. CloudWatch collects backend logs; CloudWatch RUM handles
 browser errors once configured. See `aws/README.md` for the deployment plan.
 
-This is a development starter. Authentication, adoption features, schema
-migrations, AWS resources, and monitoring integration are not implemented yet.
+The web app implements the adoption workflow (catalog, pet details, adoption
+requests, login, and the organization portal) against an in-memory mock
+backend. The API endpoints it expects are listed in `app/README.md`. API
+authentication and adoption endpoints, schema migrations, AWS resources, and
+monitoring integration are not implemented yet.
