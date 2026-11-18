@@ -1,5 +1,4 @@
-import { Heart, MapPin, Star } from 'lucide-react'
-import { useState } from 'react'
+import { MapPin, Star } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import type { Pet } from '../../types'
 import { formatAge, isNewPet, primaryPhotoUrl, SEX_LABELS, SIZE_LABELS } from '../../utils/pets'
@@ -17,9 +16,6 @@ function Attribute({ label, value }: { label: string; value: string }) {
 }
 
 export function PetCard({ pet }: { pet: Pet }) {
-  // Favorites are local-only for now; persisting them is outside the MVP.
-  const [favorite, setFavorite] = useState(false)
-
   return (
     <article className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
       <div className="relative">
@@ -33,18 +29,7 @@ export function PetCard({ pet }: { pet: Pet }) {
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-brand-900">{pet.name}</h3>
-          <button
-            type="button"
-            onClick={() => setFavorite((value) => !value)}
-            aria-pressed={favorite}
-            aria-label={favorite ? `Remove ${pet.name} from favorites` : `Add ${pet.name} to favorites`}
-            className="rounded-full p-1 text-gray-400 transition-colors hover:text-brand-600"
-          >
-            <Heart className={`size-5 ${favorite ? 'fill-brand-600 text-brand-600' : ''}`} aria-hidden />
-          </button>
-        </div>
+        <h3 className="text-lg font-semibold text-brand-900">{pet.name}</h3>
 
         <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-brand-900">
           <MapPin className="size-3.5 text-brand-600" aria-hidden />

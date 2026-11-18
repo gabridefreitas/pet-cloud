@@ -1,14 +1,7 @@
 import { ClipboardCheck, HeartHandshake, HousePlus, MessageCircleHeart, PawPrint, Search, Stethoscope, UserPlus, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import heroPet from '../assets/hero-pet.png'
-import { PetCard } from '../components/pets/PetCard'
-import { ErrorState } from '../components/ui/Feedback'
 import { outlineButtonClass, primaryButtonClass } from '../components/ui/styles'
-import { usePets } from '../hooks/usePets'
-import type { PetFilters } from '../types'
-
-/** Defined outside the component so the object is stable between renders. */
-const FEATURED_FILTERS: PetFilters = { page: 1, page_size: 4 }
 
 const STEPS = [
   { icon: UserPlus, text: 'Create your free profile in a couple of minutes.' },
@@ -70,44 +63,6 @@ const FAQ = {
   ],
 }
 
-function SectionTitle({ children, accent }: { children: string; accent?: string }) {
-  return (
-    <h2 className="text-center text-2xl font-medium text-gray-900 sm:text-3xl">
-      {children} {accent && <span className="text-brand-600">{accent}</span>}
-    </h2>
-  )
-}
-
-function FeaturedPets() {
-  const { data, loading, error, reload } = usePets(FEATURED_FILTERS)
-
-  return (
-    <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8" aria-labelledby="featured-title">
-      <div id="featured-title">
-        <SectionTitle accent="Our Pets">Take a Look at Some of</SectionTitle>
-      </div>
-      <div className="mt-10">
-        {error ? (
-          <ErrorState title="We couldn't load the pets." message={error} onRetry={reload} />
-        ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4" aria-busy={loading}>
-            {loading && !data
-              ? Array.from({ length: 4 }, (_, index) => (
-                  <div key={index} className="h-96 animate-pulse rounded-xl bg-brand-50" aria-hidden />
-                ))
-              : data?.items.map((pet) => <PetCard key={pet.id} pet={pet} />)}
-          </div>
-        )}
-      </div>
-      <div className="mt-8 flex justify-center">
-        <Link to="/adopt" className={outlineButtonClass}>
-          See more
-        </Link>
-      </div>
-    </section>
-  )
-}
-
 /** Public landing page, based on the "Landing page" design reference. */
 export function HomePage() {
   return (
@@ -146,8 +101,6 @@ export function HomePage() {
           </div>
         </div>
       </section>
-
-      <FeaturedPets />
 
       {/* 3 easy steps */}
       <section className="bg-gray-50 py-20" aria-labelledby="steps-title">
