@@ -2,6 +2,8 @@ FROM python:3.12-slim
 WORKDIR /app
 COPY pyproject.toml ./
 COPY petcloud ./petcloud
+COPY scripts ./scripts
+COPY db ./db
 RUN pip install --no-cache-dir . && useradd --create-home petcloud
 USER petcloud
 EXPOSE 8000
