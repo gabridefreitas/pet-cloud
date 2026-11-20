@@ -1,0 +1,88 @@
+
+from typing import Literal
+from uuid import UUID
+
+from fastapi import APIRouter, Query
+
+from petcloud.dependencies import AdminOrOrganizationMember
+from petcloud.schemas import (
+    Pet, PetDetails, PetInput, PetStatusUpdate,
+    PhotoUploadRequest, PhotoRegister,
+    PetSpecies, PetSex, PetSize, PetColor, PetStatus,
+    AgeGroup, Paginated, PetPhoto, PhotoUploadTicket
+)
+from petcloud.services import pets
+
+
+router = APIRouter(tags=['Pets'])
+
+
+@router.get('/pets', response_model=Paginated)
+def list_pets(
+    species: PetSpecies | None = None,
+    location: str | None = None,
+    size: list[PetSize] = Query(default=[]),
+    breed: list[str] = Query(default=[]),
+    color: list[PetColor] = Query(default=[]),
+    sex: PetSex | None = None,
+    age: list[AgeGroup] = Query(default=[]),
+    status: PetStatus = 'available',
+    page: int = Query(1, ge=1),
+    page_size: int = Query(9, ge=1, le=100)
+):
+    return pets.list_pets(
+        species, location, size, breed, color,
+        sex, age, status, page, page_size
+    )
+
+
+@router.get('/pets/{pet_id}', response_model=PetDetails)
+def get_pet(pet_id: UUID):
+    return pets.get_pet(pet_id)
+
+
+@router.get('/organizations/me/pets', response_model=list[Pet])
+def organization_pets(user: AdminOrOrganizationMember):
+    return pets.organization_pets(user)
+
+
+@router.post('/pets', response_model=Pet, status_code=201)
+def create_pet(
+    data: PetInput,
+    user: AdminOrOrganizationMember
+):
+    return pets.create_pet(data, user)
+
+
+@router.patch('/pets/{pet_id}', response_model=Pet)
+def update_pet(
+    pet_id: UUID,
+    data: PetStatusUpdate,
+    user: AdminOrOrganizationMember
+):
+    return pets.update_pet(pet_id, data, user)
+
+
+@router.post(
+    '/pets/{pet_id}/photos/upload-url',
+    response_model=PhotoUploadTicket
+)
+def photo_upload_url(
+    pet_id: UUID,
+    data: PhotoUploadRequest,
+    user: AdminOrOrganizationMember
+):
+    return pets.photo_upload_url(pet_id, data, user)
+
+
+@router.post(
+    '/pets/{pet_id}/photos',
+    response_model=PetPhoto,
+    status_code=201
+)
+def register_photo(
+    pet_id: UUID,
+    data: PhotoRegister,
+    user: AdminOrOrganizationMember
+):
+    return pets.register_photo(pet_id, data, user)

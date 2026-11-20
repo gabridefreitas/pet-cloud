@@ -12,6 +12,10 @@ dependencies = [
   "uvicorn[standard]>=0.34,<1",
   "pydantic-settings>=2.7,<3",
   "psycopg[binary]>=3.2,<4",
+  "pwdlib[argon2]>=0.2,<1",
+  "PyJWT>=2.10,<3",
+  "email-validator>=2.2,<3",
+  "boto3>=1.36,<2",
 ]
 
 [project.optional-dependencies]
