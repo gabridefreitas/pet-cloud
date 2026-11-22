@@ -95,8 +95,7 @@ Errors use FastAPI's `{ "detail": ... }` format with an appropriate status code.
 | `GET /pets/{id}` | – | → `PetDetails` (pet with its organization) |
 | `POST /pets` | organization | `PetInput` → `Pet` |
 | `PATCH /pets/{id}` | organization | `PetStatusUpdate` → `Pet` |
-| `POST /pets/{id}/photos/upload-url` | organization | `PhotoUploadRequest` → `PhotoUploadTicket` (presigned S3 PUT URL) |
-| `POST /pets/{id}/photos` | organization | `{ s3_key }` → `PetPhoto` |
+| `POST /pets/{id}/photos` | organization | multipart `file` → `PetPhoto` (API validates, uploads and registers) |
 | `GET /organizations/me/pets` | organization | → `Pet[]` (all statuses) |
 | `POST /adoption-requests` | adopter | `AdoptionRequestInput` → `AdoptionRequest` |
 | `GET /adoption-requests/me` | adopter | → `AdoptionRequestDetails[]` |
@@ -110,7 +109,7 @@ Business rules implemented by the API:
 - Only `pending` requests can be approved or rejected (409 otherwise).
 - Approving a request sets the pet to `pending`, which hides it from the catalog.
 - Age filter groups: baby under 12 months, young 12–35, adult 36–95, senior 96+.
-- Photos: JPEG, PNG, or WebP up to 5 MB, uploaded by the browser directly to S3.
+- Photos: JPEG, PNG, or WebP up to 5 MB, sent to the API, which uploads them to S3. The browser only renders the returned image URL.
 
 ## Manual smoke checklist
 

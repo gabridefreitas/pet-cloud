@@ -18,10 +18,8 @@ import type {
   PetInput,
   PetPhoto,
   PetStatus,
-  PhotoUploadRequest,
-  PhotoUploadTicket,
 } from '../types'
-import { api, uploadToPresignedUrl, USE_MOCKS } from './api'
+import { api, USE_MOCKS } from './api'
 
 export const DEFAULT_PAGE_SIZE = 9
 
@@ -62,24 +60,20 @@ export function updatePetStatus(id: string, status: PetStatus, signal?: AbortSig
 
 /** Returns an error message if the file cannot be uploaded, or null if it is valid. */
 export function validatePhoto(file: File): string | null {
+  if (file.size === 0) return `${file.name}: the photo must not be empty.`
   if (!PHOTO_CONTENT_TYPES.includes(file.type)) return `${file.name}: use a JPEG, PNG, or WebP image.`
   if (file.size > PHOTO_MAX_BYTES) return `${file.name}: the image must be 5 MB or smaller.`
   return null
 }
 
-/**
- * Uploads a pet photo to S3 in three steps, so the file never passes through EC2:
- *
- * 1. `POST /pets/{id}/photos/upload-url` — the API returns a presigned PUT URL and the S3 key;
- * 2. `PUT <presigned URL>` — the browser sends the file directly to the S3 bucket;
- * 3. `POST /pets/{id}/photos` with `{ s3_key }` — the API stores the key in RDS.
- */
+/** Sends the file to the API, which validates it, uploads to S3 and registers the photo. */
 export async function uploadPetPhoto(petId: string, file: File, signal?: AbortSignal): Promise<PetPhoto> {
   if (USE_MOCKS) return addMockPetPhoto(petId, file, signal)
 
-  const path = `/pets/${encodeURIComponent(petId)}/photos`
-  const request: PhotoUploadRequest = { filename: file.name, content_type: file.type }
-  const ticket = await api.post<PhotoUploadTicket>(`${path}/upload-url`, request, { signal })
-  await uploadToPresignedUrl(ticket.upload_url, file, signal)
-  return api.post<PetPhoto>(path, { s3_key: ticket.s3_key }, { signal })
+  const body = new FormData()
+  body.append('file', file)
+  return api.post<PetPhoto>(`/pets/${encodeURIComponent(petId)}/photos`, body, {
+    signal,
+    timeoutMs: 60_000,
+  })
 }

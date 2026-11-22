@@ -381,7 +381,7 @@ export async function updateMockPetStatus(id: string, status: PetStatus, signal?
 }
 
 /**
- * Mock of the photo upload flow (presigned URL + S3 PUT + registration).
+ * Mock of the API-managed photo upload flow.
  * The file is kept as a local object URL instead of being uploaded.
  */
 export async function addMockPetPhoto(petId: string, file: File, signal?: AbortSignal): Promise<PetPhoto> {

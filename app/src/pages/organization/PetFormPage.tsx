@@ -95,7 +95,7 @@ function Field({ label, htmlFor, children }: { label: string; htmlFor: string; c
 
 /**
  * Organization form to register a new pet. On submit it creates the pet
- * (`POST /pets`) and then uploads each photo straight to S3 using presigned URLs.
+ * (`POST /pets`) and then sends each photo to the API for S3 storage.
  */
 export function PetFormPage() {
   const navigate = useNavigate()

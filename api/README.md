@@ -73,25 +73,28 @@ Set `S3_BUCKET` to an existing private bucket and `AWS_REGION` to its region.
 Local boto3 uses the default AWS credential chain; no credentials are sent to
 the browser. Configuring or provisioning AWS resources is a separate action.
 
-1. The member requests `POST /pets/{id}/photos/upload-url` with a filename and content type.
-2. The API authorizes ownership and returns a presigned PUT URL valid for 10 minutes.
-3. The browser uploads directly to S3 with the signed content type.
-4. The member posts `{ "s3_key": "pets/..." }` to `/pets/{id}/photos`.
-5. The API checks the object type/size, stores its permanent key in `pet_photos`,
-   and returns a photo with a presigned GET `url`. Catalog and detail responses
-   generate fresh GET URLs valid for one hour. The frontend renders that URL.
+1. The browser sends `POST /pets/{id}/photos` with multipart field `file` and its JWT.
+2. The API checks organization ownership, declared type, image signature and size.
+3. The API uploads the file to S3 and registers its permanent key in `pet_photos`.
+4. The response is a `PetPhoto` with a presigned GET `url`. Catalog and detail
+   responses also generate fresh GET URLs valid for one hour; the browser renders them.
 
-JPEG, PNG and WebP are accepted, up to 5 MB and five photos per pet. Repeating
-registration of the same key returns the same photo instead of duplicating it.
+JPEG, PNG and WebP are accepted, up to 5 MB and five photos per pet. Retrying the
+same file for the same pet returns its existing photo without another S3 upload.
+Uploads for a pet are serialized to enforce the limit. If photo registration
+fails after upload, the API attempts to remove the newly uploaded object before
+releasing the pet lock. An ambiguous database commit failure may leave an object
+for later reconciliation; S3 and PostgreSQL do not share a transaction.
 The organization portal supports adding photos to seeded pets and retrying a
 partially completed new-pet upload without creating another pet.
 
-The bucket must allow browser PUT requests from `http://localhost:5173` with
-`Content-Type` in its CORS configuration. The backend identity needs object
-read, write and delete permissions in the photo prefix. Bucket access remains
-private, but anyone holding a signed URL can use it until it expires. Browsing
-the public catalog intentionally makes its photo URLs available to visitors.
-With no bucket configured, photo upload returns 503; pet browsing still works.
+There is no browser-to-S3 PUT or upload-ticket endpoint. The backend identity
+needs object read, write and delete permissions in the photo prefix. No S3
+browser-upload CORS configuration is required for this flow. Bucket access
+remains private, but anyone holding a signed GET URL can read that object until
+it expires. The browser downloads displayed images using those returned URLs;
+image bytes are not proxied through the API on reads. With no bucket configured,
+photo upload returns 503; pet browsing still works.
 
 ## Configuration and logs
 

@@ -36,10 +36,11 @@ Apply the same future versioned migrations used in local development.
 
 ## Pet images: separate S3 bucket
 
-Keep uploaded pet images separate from frontend build files. Use backend-issued
-presigned upload URLs and scoped IAM permissions. Decide how images will be
-served when implementing pet profiles (for example, CloudFront for public
-adoption photos). Configure upload CORS for the frontend origin at that point.
+Keep uploaded pet images separate from frontend build files. The browser sends
+multipart files to the authenticated API, which validates ownership/content,
+uploads to S3 and stores the permanent object key in PostgreSQL. Use scoped IAM
+permissions for the API identity. The API returns signed GET image URLs for the
+browser to render; no browser-to-S3 PUT or upload CORS configuration is needed.
 
 ## Monitoring: CloudWatch
 

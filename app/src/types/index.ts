@@ -233,24 +233,6 @@ export interface TokenResponse {
 }
 
 // ---------------------------------------------------------------------------
-// Photo upload (S3 presigned URL flow)
-// ---------------------------------------------------------------------------
-
-/** Sent to the API to request a presigned PUT URL for a new pet photo. */
-export interface PhotoUploadRequest {
-  filename: string
-  content_type: string
-}
-
-export interface PhotoUploadTicket {
-  /** Presigned S3 URL; the browser PUTs the file here directly. */
-  upload_url: string
-  /** Object key to send back to the API to register the photo. */
-  s3_key: string
-  expires_in: number
-}
-
-// ---------------------------------------------------------------------------
 // API errors
 // ---------------------------------------------------------------------------
 

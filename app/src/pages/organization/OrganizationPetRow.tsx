@@ -36,7 +36,7 @@ export function OrganizationPetRow({ pet: initialPet }: { pet: Pet }) {
     setError(null)
     try {
       const photo = await uploadPetPhoto(pet.id, file)
-      setPet((current) => ({ ...current, photos: [...current.photos, photo] }))
+      setPet((current) => ({ ...current, photos: [...current.photos.filter((item) => item.id !== photo.id), photo] }))
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not upload the photo.')
     } finally {

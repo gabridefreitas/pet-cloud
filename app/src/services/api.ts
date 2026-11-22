@@ -187,32 +187,3 @@ export const api = {
     request<T>('PATCH', path, { ...options, body }),
   delete: <T = void>(path: string, options?: RequestOptions) => request<T>('DELETE', path, options),
 }
-
-// ---------------------------------------------------------------------------
-// S3 uploads
-// ---------------------------------------------------------------------------
-
-/**
- * Uploads a file straight to S3 using a presigned PUT URL issued by the API.
- * The API token is deliberately not sent: S3 authorizes via the URL signature.
- * The Content-Type must match the one used when the URL was signed.
- */
-export async function uploadToPresignedUrl(uploadUrl: string, file: File, signal?: AbortSignal): Promise<void> {
-  let response: Response
-  try {
-    response = await fetch(uploadUrl, {
-      method: 'PUT',
-      headers: { 'Content-Type': file.type },
-      body: file,
-      signal,
-    })
-  } catch (error) {
-    if (signal?.aborted) throw error
-    logger.error('Photo upload failed', { action: 'PUT presigned S3 URL', error })
-    throw new ApiError('Could not upload the photo. Check your connection.', 0, 's3')
-  }
-  if (!response.ok) {
-    logger.error('Photo upload rejected', { action: 'PUT presigned S3 URL', data: { status: response.status } })
-    throw new ApiError('The photo upload was rejected. Please try again.', response.status, 's3')
-  }
-}

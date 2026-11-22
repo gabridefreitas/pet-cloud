@@ -179,21 +179,6 @@ class TokenResponse(BaseModel):
     token_type: Literal['bearer'] = 'bearer'
 
 
-class PhotoUploadRequest(BaseModel):
-    filename: str = Field(min_length=1, max_length=255)
-    content_type: Literal['image/jpeg', 'image/png', 'image/webp']
-
-
-class PhotoUploadTicket(BaseModel):
-    upload_url: str
-    s3_key: str
-    expires_in: int
-
-
-class PhotoRegister(BaseModel):
-    s3_key: str
-
-
 class BrowserLog(BaseModel):
     level: Literal['error', 'warning', 'info'] = 'error'
     message: str = Field(min_length=1, max_length=10000)

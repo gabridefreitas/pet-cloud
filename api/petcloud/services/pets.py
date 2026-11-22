@@ -1,9 +1,11 @@
 
-import re
-from uuid import uuid4
+import hashlib
+import logging
 
+import psycopg
 from botocore.exceptions import BotoCoreError, ClientError
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
+from psycopg.pq import TransactionStatus
 
 from petcloud.services.common import ensure_s3, pet_details, pet_dict
 from petcloud.services.database import connect
@@ -186,113 +188,74 @@ def update_pet(pet_id, data, user):
         return pet_dict(conn, row)
 
 
-def photo_upload_url(pet_id, data, user):
-    # Authorize access before issuing an S3 upload URL.
+PHOTO_MAX_BYTES = 5 * 1024 * 1024
+PHOTO_EXTENSIONS = {'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp'}
+logger = logging.getLogger('petcloud.photos')
+
+
+def upload_photo(pet_id, photo: UploadFile, user):
+    # Check ownership before accessing storage or reading the uploaded file.
     with connect() as conn:
         _get_accessible_pet(conn, pet_id, user)
 
-    client, settings = ensure_s3()
-
-    name = re.sub(
-        r'[^a-zA-Z0-9._-]',
-        '_',
-        data.filename
-    )[:120]
-
-    key = f'pets/{pet_id}/{uuid4()}-{name}'
-
-    url = client.generate_presigned_url(
-        'put_object',
-        Params={
-            'Bucket': settings.s3_bucket,
-            'Key': key,
-            'ContentType': data.content_type
-        },
-        ExpiresIn=600
-    )
-
-    return {
-        'upload_url': url,
-        's3_key': key,
-        'expires_in': 600
+    content_type = photo.content_type
+    if content_type not in PHOTO_EXTENSIONS:
+        raise HTTPException(415, 'Photo must be JPEG, PNG or WebP.')
+    content = photo.file.read(PHOTO_MAX_BYTES + 1)
+    if len(content) > PHOTO_MAX_BYTES:
+        raise HTTPException(413, 'Photo must be at most 5 MB.')
+    if not content:
+        raise HTTPException(400, 'Photo must not be empty.')
+    matches_type = {
+        'image/jpeg': content.startswith(b'\xff\xd8\xff'),
+        'image/png': content.startswith(b'\x89PNG\r\n\x1a\n'),
+        'image/webp': content.startswith(b'RIFF') and content[8:12] == b'WEBP',
     }
+    if not matches_type[content_type]:
+        raise HTTPException(400, 'Photo content does not match its image type.')
 
-
-def register_photo(pet_id, data, user):
-    if not data.s3_key.startswith(f'pets/{pet_id}/'):
-        raise HTTPException(
-            400,
-            'Invalid photo object key.'
-        )
-
-    # Authorize before accessing S3.
-    with connect() as conn:
-        _get_accessible_pet(conn, pet_id, user)
-
-    client, settings = ensure_s3()
-
+    # A stable per-pet key makes retrying the same file reuse the existing photo.
+    digest = hashlib.sha256(content).hexdigest()
+    key = f'pets/{pet_id}/{digest}.{PHOTO_EXTENSIONS[content_type]}'
     try:
-        obj = client.head_object(
-            Bucket=settings.s3_bucket,
-            Key=data.s3_key
-        )
-
-        if (
-            obj['ContentLength'] > 5 * 1024 * 1024
-            or obj.get('ContentType') not in (
-                'image/jpeg',
-                'image/png',
-                'image/webp'
-            )
-        ):
-            client.delete_object(
-                Bucket=settings.s3_bucket,
-                Key=data.s3_key
-            )
-
-            raise HTTPException(
-                400,
-                'Photo must be JPEG, PNG or WebP and at most 5 MB.'
-            )
-
-    except HTTPException:
-        raise
-
-    except (BotoCoreError, ClientError):
-        raise HTTPException(
-            400,
-            'Uploaded photo could not be verified.'
-        ) from None
-
-    with connect() as conn:
-        _get_accessible_pet(conn, pet_id, user, lock=True)
-        row = conn.execute(
-            'SELECT * FROM pet_photos WHERE pet_id=%s AND s3_key=%s',
-            (pet_id, data.s3_key)
-        ).fetchone()
-        if not row:
-            count = conn.execute(
-                'SELECT count(*) AS n FROM pet_photos WHERE pet_id=%s', (pet_id,)
-            ).fetchone()['n']
-            if count >= 5:
-                client.delete_object(Bucket=settings.s3_bucket, Key=data.s3_key)
-                raise HTTPException(409, 'A pet can have at most five photos.')
-            row = conn.execute(
-                'INSERT INTO pet_photos(pet_id,s3_key,is_primary,position) '
-                'VALUES (%s,%s,%s,%s) RETURNING *',
-                (pet_id, data.s3_key, count == 0, count)
-            ).fetchone()
-
+        client, settings = ensure_s3()
         url = client.generate_presigned_url(
-            'get_object',
-            Params={
-                'Bucket': settings.s3_bucket,
-                'Key': data.s3_key
-            },
-            ExpiresIn=3600
+            'get_object', Params={'Bucket': settings.s3_bucket, 'Key': key}, ExpiresIn=3600,
         )
-
-        return {
-            **row,
-            'url': url
-        }
+        with connect() as conn:
+            # Serialize uploads for this pet to enforce the five-photo limit.
+            _get_accessible_pet(conn, pet_id, user, lock=True)
+            row = conn.execute(
+                'SELECT * FROM pet_photos WHERE pet_id=%s AND s3_key=%s',
+                (pet_id, key),
+            ).fetchone()
+            if not row:
+                count = conn.execute(
+                    'SELECT count(*) AS n FROM pet_photos WHERE pet_id=%s', (pet_id,)
+                ).fetchone()['n']
+                if count >= 5:
+                    raise HTTPException(409, 'A pet can have at most five photos.')
+                client.put_object(
+                    Bucket=settings.s3_bucket, Key=key, Body=content, ContentType=content_type,
+                )
+                try:
+                    # A savepoint keeps the outer pet lock if insertion fails.
+                    with conn.transaction():
+                        row = conn.execute(
+                            'INSERT INTO pet_photos(pet_id,s3_key,is_primary,position) '
+                            'VALUES (%s,%s,%s,%s) RETURNING *',
+                            (pet_id, key, count == 0, count),
+                        ).fetchone()
+                except psycopg.Error:
+                    # Only compensate while the lock is known to be held. An
+                    # uncertain connection/commit must not delete a retry's object.
+                    if conn.info.transaction_status == TransactionStatus.INTRANS:
+                        try:
+                            client.delete_object(Bucket=settings.s3_bucket, Key=key)
+                        except (BotoCoreError, ClientError):
+                            logger.exception('photo_upload_cleanup_failed')
+                    raise
+        return {**row, 'url': url}
+    except (BotoCoreError, ClientError, psycopg.Error):
+        logger.exception('photo_upload_failed')
+        raise HTTPException(503, 'Photo could not be saved. Please try again.') from None

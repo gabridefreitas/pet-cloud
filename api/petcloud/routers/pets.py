@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, UploadFile
 
 from petcloud.dependencies import OrganizationMember
 from petcloud.schemas import (
@@ -17,9 +17,6 @@ from petcloud.schemas import (
     PetSpecies,
     PetStatus,
     PetStatusUpdate,
-    PhotoRegister,
-    PhotoUploadRequest,
-    PhotoUploadTicket,
 )
 from petcloud.services import pets
 
@@ -72,26 +69,6 @@ def update_pet(
     return pets.update_pet(pet_id, data, user)
 
 
-@router.post(
-    '/pets/{pet_id}/photos/upload-url',
-    response_model=PhotoUploadTicket
-)
-def photo_upload_url(
-    pet_id: UUID,
-    data: PhotoUploadRequest,
-    user: OrganizationMember
-):
-    return pets.photo_upload_url(pet_id, data, user)
-
-
-@router.post(
-    '/pets/{pet_id}/photos',
-    response_model=PetPhoto,
-    status_code=201
-)
-def register_photo(
-    pet_id: UUID,
-    data: PhotoRegister,
-    user: OrganizationMember
-):
-    return pets.register_photo(pet_id, data, user)
+@router.post('/pets/{pet_id}/photos', response_model=PetPhoto, status_code=201)
+def upload_photo(pet_id: UUID, file: UploadFile, user: OrganizationMember):
+    return pets.upload_photo(pet_id, file, user)
