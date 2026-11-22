@@ -101,6 +101,7 @@ export function PetFormPage() {
   const navigate = useNavigate()
   const [values, setValues] = useState<FormValues>(INITIAL_VALUES)
   const [photos, setPhotos] = useState<SelectedPhoto[]>([])
+  const [uploadedPhotoCount, setUploadedPhotoCount] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [progress, setProgress] = useState<string | null>(null)
   /** Set when the pet was created but a photo failed, so the user is not stuck. */
@@ -118,7 +119,7 @@ export function PetFormPage() {
 
   function addPhotos(files: FileList | null) {
     if (!files) return
-    const room = MAX_PHOTOS - photos.length
+    const room = MAX_PHOTOS - uploadedPhotoCount - photos.length
     const accepted: SelectedPhoto[] = []
     const problems: string[] = []
     for (const file of Array.from(files)) {
@@ -143,19 +144,25 @@ export function PetFormPage() {
       setError(input)
       return
     }
-    if (photos.length === 0) {
+    if (photos.length === 0 && !createdPetId) {
       setError('Add at least one photo. Pets with photos are adopted much faster.')
       return
     }
 
     setError(null)
     setProgress('Saving pet…')
-    let petId: string | null = null
+    let petId: string | null = createdPetId
     try {
-      petId = (await createPet(input)).id
+      if (!petId) {
+        petId = (await createPet(input)).id
+        setCreatedPetId(petId)
+      }
       for (const [index, photo] of photos.entries()) {
         setProgress(`Uploading photo ${index + 1} of ${photos.length}…`)
         await uploadPetPhoto(petId, photo.file)
+        URL.revokeObjectURL(photo.previewUrl)
+        setUploadedPhotoCount((current) => current + 1)
+        setPhotos((current) => current.filter((selected) => selected !== photo))
       }
       navigate('/organization?tab=pets')
     } catch (caught) {
@@ -180,7 +187,7 @@ export function PetFormPage() {
         <p className="mt-1 text-sm text-gray-600">The pet appears in the catalog as soon as it is saved.</p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-8" noValidate>
-          <fieldset disabled={submitting} className="space-y-5">
+          <fieldset disabled={submitting || createdPetId !== null} className="space-y-5">
             <legend className="mb-4 font-semibold text-brand-900">Basic information</legend>
             <div className="grid gap-5 sm:grid-cols-2">
               <Field label="Name" htmlFor="pet-name">
@@ -249,7 +256,7 @@ export function PetFormPage() {
             </Field>
           </fieldset>
 
-          <fieldset disabled={submitting} className="space-y-5">
+          <fieldset disabled={submitting || createdPetId !== null} className="space-y-5">
             <legend className="mb-4 font-semibold text-brand-900">Health</legend>
             <div className="flex flex-wrap gap-6">
               <label className="flex items-center gap-2 text-sm text-gray-800">
@@ -273,7 +280,7 @@ export function PetFormPage() {
             </Field>
           </fieldset>
 
-          <fieldset disabled={submitting} className="space-y-5">
+          <fieldset disabled={submitting || createdPetId !== null} className="space-y-5">
             <legend className="mb-4 font-semibold text-brand-900">Location</legend>
             <div className="grid gap-5 sm:grid-cols-3">
               <Field label="City" htmlFor="pet-city">
@@ -297,7 +304,7 @@ export function PetFormPage() {
               {photos.map((photo, index) => (
                 <div key={photo.previewUrl} className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-gray-200">
                   <img src={photo.previewUrl} alt={`Selected photo ${index + 1}`} className="size-full object-cover" />
-                  {index === 0 && (
+                  {index === 0 && uploadedPhotoCount === 0 && (
                     <span className="absolute top-2 left-2 rounded bg-brand-600 px-1.5 py-0.5 text-[10px] font-medium text-white">Cover</span>
                   )}
                   <button
@@ -310,7 +317,7 @@ export function PetFormPage() {
                   </button>
                 </div>
               ))}
-              {photos.length < MAX_PHOTOS && (
+              {photos.length + uploadedPhotoCount < MAX_PHOTOS && (
                 <label className="flex aspect-[4/3] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-brand-200 text-sm text-brand-600 transition-colors hover:border-brand-400 hover:bg-brand-50">
                   <ImagePlus className="size-7" aria-hidden />
                   Add photos
@@ -344,8 +351,8 @@ export function PetFormPage() {
             <Link to="/organization?tab=pets" className={outlineButtonClass}>
               Cancel
             </Link>
-            <button type="submit" disabled={submitting || createdPetId !== null} className={primaryButtonClass}>
-              {progress ?? 'Save pet'}
+            <button type="submit" disabled={submitting} className={primaryButtonClass}>
+              {progress ?? (createdPetId ? 'Finish uploading photos' : 'Save pet')}
             </button>
           </div>
         </form>

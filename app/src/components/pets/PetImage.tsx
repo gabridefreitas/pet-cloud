@@ -12,7 +12,8 @@ interface PetImageProps {
  * when the URL is missing or fails (expired presigned URL, deleted object).
  */
 export function PetImage({ src, alt, className = '' }: PetImageProps) {
-  const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>(src ? 'loading' : 'error')
+  const [result, setResult] = useState<{ src: string; status: 'loaded' | 'error' } | null>(null)
+  const status = !src ? 'error' : result?.src === src ? result.status : 'loading'
 
   return (
     <div className={`relative overflow-hidden bg-brand-50 ${className}`}>
@@ -27,8 +28,8 @@ export function PetImage({ src, alt, className = '' }: PetImageProps) {
           src={src}
           alt={alt}
           loading="lazy"
-          onLoad={() => setStatus('loaded')}
-          onError={() => setStatus('error')}
+          onLoad={() => setResult({ src, status: 'loaded' })}
+          onError={() => setResult({ src, status: 'error' })}
           className={`size-full object-cover transition-opacity duration-300 ${status === 'loaded' ? 'opacity-100' : 'opacity-0'}`}
         />
       )}

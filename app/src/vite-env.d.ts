@@ -5,7 +5,7 @@ interface ImportMetaEnv {
   readonly VITE_API_URL?: string
   /** Optional endpoint that receives browser error logs as JSON. Empty disables it. */
   readonly VITE_LOG_ENDPOINT?: string
-  /** "false" loads pets from the API; any other value uses local mock data. */
+  /** "true" enables local mocks; otherwise services call the real API. */
   readonly VITE_USE_MOCKS?: string
 }
 

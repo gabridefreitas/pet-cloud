@@ -1,16 +1,16 @@
 
-"""Pydantic schemas espelhados em app/src/types/index.ts."""
+"""Pydantic models implementing the frontend contract in app/src/types/index.ts."""
 
 from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 Id = UUID
 IsoDateTime = datetime
 
-UserRole = Literal['adopter', 'organization_member', 'admin']
+UserRole = Literal['adopter', 'organization_member']
 PetSpecies = Literal['cat', 'dog']
 PetSex = Literal['male', 'female']
 PetSize = Literal['small', 'medium', 'large']
@@ -65,7 +65,7 @@ class PetPhoto(ORMModel):
 
 class Pet(ORMModel):
     id: Id
-    organization_id: Id | None = None
+    organization_id: Id
     name: str
     species: PetSpecies
     breed: str
@@ -87,11 +87,10 @@ class Pet(ORMModel):
 
 
 class PetDetails(Pet):
-    organization: Organization | None = None
+    organization: Organization
 
 
 class PetInput(BaseModel):
-    organization_id: Id | None = None
     name: str = Field(min_length=1, max_length=100)
     species: PetSpecies
     breed: str = Field(min_length=1, max_length=100)
@@ -99,7 +98,7 @@ class PetInput(BaseModel):
     age_months: int = Field(ge=1, le=600)
     size: PetSize
     color: PetColor
-    description: str = Field(min_length=1, max_length=5000)
+    description: str = Field(min_length=20, max_length=5000)
     health_notes: str | None = None
     is_vaccinated: bool
     is_neutered: bool
@@ -146,7 +145,7 @@ class AdoptionRequestDetails(AdoptionRequest):
 
 class AdoptionRequestInput(BaseModel):
     pet_id: Id
-    message: str = Field(min_length=10, max_length=3000)
+    message: str = Field(min_length=30, max_length=3000)
     housing_type: HousingType
     has_children: bool
     has_other_pets: bool

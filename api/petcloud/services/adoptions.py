@@ -1,11 +1,13 @@
 import psycopg
 from fastapi import HTTPException
-from petcloud.services.database import connect
+
 from petcloud.services.common import adoption_details
+from petcloud.services.database import connect
+
 
 def create_request(data,user):
     with connect() as conn:
-        pet=conn.execute('SELECT * FROM pets WHERE id=%s',(data.pet_id,)).fetchone()
+        pet=conn.execute('SELECT * FROM pets WHERE id=%s FOR UPDATE',(data.pet_id,)).fetchone()
         if not pet: raise HTTPException(404,'Pet not found.')
         if pet['status']!='available': raise HTTPException(409,f"{pet['name']} is no longer available for adoption.")
         try:

@@ -4,15 +4,14 @@ from uuid import UUID
 
 import jwt
 from fastapi import Depends, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from petcloud.config import get_settings
 from petcloud.services.database import connect
 
-
 settings = get_settings()
 
-# Registra a autenticação Bearer no OpenAPI/Swagger
+# Expose bearer authentication in OpenAPI.
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
@@ -59,33 +58,12 @@ def current_user(
 
 
 def require_role(role: str):
-    def dependency(user=Depends(current_user)):
-        # Administrador tem acesso a todas as permissões.
-        if user['role'] == 'admin':
-            return user
-
+    def dependency(user: Annotated[dict, Depends(current_user)]):
         if user['role'] != role:
             raise HTTPException(
                 status_code=403,
                 detail='You do not have permission to perform this action.'
             )
-
-        return user
-
-    return dependency
-
-def require_roles(*roles: str):
-    def dependency(user=Depends(current_user)):
-        # Administrador tem acesso a todas as permissões.
-        if user['role'] == 'admin':
-            return user
-
-        if user['role'] not in roles:
-            raise HTTPException(
-                status_code=403,
-                detail='You do not have permission to perform this action.'
-            )
-
         return user
 
     return dependency
@@ -94,9 +72,3 @@ def require_roles(*roles: str):
 Authenticated = Annotated[dict, Depends(current_user)]
 Adopter = Annotated[dict, Depends(require_role('adopter'))]
 OrganizationMember = Annotated[dict, Depends(require_role('organization_member'))]
-Admin = Annotated[dict, Depends(require_role('admin'))]
-
-AdminOrOrganizationMember = Annotated[
-    dict,
-    Depends(require_roles('admin', 'organization_member'))
-]

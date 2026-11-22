@@ -1,0 +1,12 @@
+.git
+**/node_modules
+**/.venv
+**/dist
+**/__pycache__
+**/*.egg-info
+**/.ruff_cache
+**/.env
+**/.env.*
+app
+aws
+.DS_Store

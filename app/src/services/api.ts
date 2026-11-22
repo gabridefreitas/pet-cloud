@@ -15,13 +15,13 @@ export const API_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000')
 
 /**
  * When true, services answer from the in-memory mock backend in `src/mocks`
- * instead of calling the API. On by default until the API implements the
- * adoption endpoints; set `VITE_USE_MOCKS=false` to use the real API.
+ * instead of calling the API. The real API is the default; mocks require
+ * an explicit `VITE_USE_MOCKS=true`.
  */
-export const USE_MOCKS = import.meta.env.VITE_USE_MOCKS !== 'false'
+export const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
 
 const DEFAULT_TIMEOUT_MS = 10_000
-const TOKEN_STORAGE_KEY = 'petcloud.access_token'
+const TOKEN_STORAGE_KEY = USE_MOCKS ? 'petcloud.mock_access_token' : 'petcloud.access_token'
 
 /** Dispatched on `window` when the API answers 401, so the UI can redirect to login. */
 export const UNAUTHORIZED_EVENT = 'petcloud:unauthorized'

@@ -1,14 +1,22 @@
 from __future__ import annotations
-import json, logging, sys, time
+
+import json
+import logging
+import sys
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
-from fastapi import FastAPI, Request, HTTPException
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
 from petcloud.config import get_settings
+from petcloud.routers import adoptions, auth, logs, organization, pets
 from petcloud.services.database import connect
-from petcloud.routers import auth, pets, adoptions, organization, logs
+
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
@@ -22,7 +30,7 @@ class JsonFormatter(logging.Formatter):
 
 handler=logging.StreamHandler(sys.stdout); handler.setFormatter(JsonFormatter())
 root=logging.getLogger(); root.handlers=[handler]; root.setLevel(logging.INFO)
-settings=get_settings(); SCHEMA_PATH=Path(__file__).with_name('schema.sql')
+settings=get_settings(); SCHEMA_PATH=Path(__file__).resolve().parents[2] / 'db' / 'schema.sql'
 @asynccontextmanager
 async def lifespan(_:FastAPI):
     with connect() as conn: conn.execute(SCHEMA_PATH.read_text(encoding='utf-8'))
@@ -49,7 +57,7 @@ async def http_error_handler(_:Request,exc:HTTPException):
     return JSONResponse(status_code=exc.status_code,content={'detail':exc.detail},headers=exc.headers)
 @app.exception_handler(RequestValidationError)
 async def validation_error_handler(_:Request,exc:RequestValidationError):
-    return JSONResponse(status_code=422,content={'detail':exc.errors()})
+    return JSONResponse(status_code=422,content=jsonable_encoder({'detail':exc.errors()}))
 
 @app.exception_handler(Exception)
 async def unexpected_error_handler(_:Request,exc:Exception):

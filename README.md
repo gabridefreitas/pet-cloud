@@ -17,7 +17,7 @@
 
 - `app/`: React, Vite, and TypeScript frontend.
 - `api/`: Python FastAPI backend.
-- `db/`: PostgreSQL documentation and future schema migrations.
+- `db/`: PostgreSQL initial schema and local demo data.
 - `aws/`: AWS deployment documentation and future infrastructure scripts.
 
 ## Local development
@@ -29,7 +29,8 @@ Start Docker Desktop, then run from the repository root:
 
 ```sh
 cp .env.example .env
-docker compose up --build -d
+docker compose up --build --wait
+docker compose exec api python -m scripts.seed_demo
 ```
 
 In another terminal:
@@ -56,8 +57,9 @@ The API runs on EC2 and connects to RDS PostgreSQL. A separate S3 bucket
 stores pet images. CloudWatch collects backend logs; CloudWatch RUM handles
 browser errors once configured. See `aws/README.md` for the deployment plan.
 
-The web app implements the adoption workflow (catalog, pet details, adoption
-requests, login, and the organization portal) against an in-memory mock
-backend. The API endpoints it expects are listed in `app/README.md`. API
-authentication and adoption endpoints, schema migrations, AWS resources, and
-monitoring integration are not implemented yet.
+The web app uses the real API by default for the catalog, authentication,
+pet management, and adoption requests. Set `VITE_USE_MOCKS=true` only for the
+optional in-memory demo. The frontend types and services define the API contract.
+See [demo accounts](db/README.md) and [API setup and S3 photos](api/README.md).
+No AWS resources are provisioned by the local setup. Without an S3 bucket,
+seeded pets show an empty-image placeholder and photo upload is unavailable.

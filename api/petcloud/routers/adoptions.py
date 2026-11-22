@@ -1,8 +1,12 @@
 from uuid import UUID
+
 from fastapi import APIRouter
+
 from petcloud.dependencies import Adopter, OrganizationMember
-from petcloud.schemas import AdoptionRequestInput, AdoptionRequestDecision, AdoptionRequest as AdoptionSchema, AdoptionRequestDetails
+from petcloud.schemas import AdoptionRequest as AdoptionSchema
+from petcloud.schemas import AdoptionRequestDecision, AdoptionRequestDetails, AdoptionRequestInput
 from petcloud.services import adoptions
+
 router=APIRouter(prefix='/adoption-requests',tags=['Adoption requests'])
 @router.post('',response_model=AdoptionSchema,status_code=201)
 def create_request(data:AdoptionRequestInput,user:Adopter): return adoptions.create_request(data,user)

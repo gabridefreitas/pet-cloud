@@ -2,43 +2,20 @@
 import re
 from uuid import uuid4
 
+from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import HTTPException
 
+from petcloud.services.common import ensure_s3, pet_details, pet_dict
 from petcloud.services.database import connect
-from petcloud.services.common import pet_dict, pet_details, ensure_s3
 
 
-def _is_admin(user):
-    return user['role'] == 'admin'
-
-
-def _get_accessible_pet(conn, pet_id, user):
-    """
-    Admin pode acessar qualquer pet.
-    Organization member só pode acessar pets da própria ONG.
-    """
-    if _is_admin(user):
-        row = conn.execute(
-            'SELECT * FROM pets WHERE id=%s',
-            (pet_id,)
-        ).fetchone()
-    else:
-        organization_id = user['organization_id']
-
-        if not organization_id:
-            raise HTTPException(
-                status_code=403,
-                detail='User is not associated with an organization.'
-            )
-
-        row = conn.execute(
-            'SELECT * FROM pets WHERE id=%s AND organization_id=%s',
-            (pet_id, organization_id)
-        ).fetchone()
-
+def _get_accessible_pet(conn, pet_id, user, *, lock=False):
+    row = conn.execute(
+        'SELECT * FROM pets WHERE id=%s AND organization_id=%s' + (' FOR UPDATE' if lock else ''),
+        (pet_id, user['organization_id'])
+    ).fetchone()
     if not row:
         raise HTTPException(404, 'Pet not found.')
-
     return row
 
 
@@ -104,7 +81,7 @@ def list_pets(
             SELECT p.*
             FROM pets p
             WHERE {where}
-            ORDER BY p.created_at DESC
+            ORDER BY p.created_at DESC, p.id DESC
             LIMIT %s OFFSET %s
             ''',
             [*params, page_size, (page - 1) * page_size]
@@ -133,28 +110,10 @@ def get_pet(pet_id):
 
 def organization_pets(user):
     with connect() as conn:
-        if _is_admin(user):
-            rows = conn.execute(
-                'SELECT * FROM pets ORDER BY created_at DESC'
-            ).fetchall()
-        else:
-            organization_id = user['organization_id']
-
-            if not organization_id:
-                raise HTTPException(
-                    status_code=403,
-                    detail='User is not associated with an organization.'
-                )
-
-            rows = conn.execute(
-                '''
-                SELECT *
-                FROM pets
-                WHERE organization_id=%s
-                ORDER BY created_at DESC
-                ''',
-                (organization_id,)
-            ).fetchall()
+        rows = conn.execute(
+            'SELECT * FROM pets WHERE organization_id=%s ORDER BY created_at DESC',
+            (user['organization_id'],)
+        ).fetchall()
 
         return [pet_dict(conn, row) for row in rows]
 
@@ -162,36 +121,9 @@ def organization_pets(user):
 def create_pet(data, user):
     payload = data.model_dump()
 
-    if _is_admin(user):
-        # Para administrador, a organização é opcional.
-        organization_id = payload.get('organization_id')
-    else:
-        # Para membro, utiliza automaticamente sua própria ONG.
-        organization_id = user['organization_id']
-
-        if not organization_id:
-            raise HTTPException(
-                status_code=403,
-                detail='User is not associated with an organization.'
-            )
+    payload['organization_id'] = user['organization_id']
 
     with connect() as conn:
-
-        # Só valida a organização quando ela foi informada.
-        if organization_id:
-            organization = conn.execute(
-                'SELECT id FROM organizations WHERE id=%s',
-                (organization_id,)
-            ).fetchone()
-
-            if not organization:
-                raise HTTPException(
-                    404,
-                    'Organization not found.'
-                )
-
-        payload['organization_id'] = organization_id
-
         row = conn.execute(
             '''
             INSERT INTO pets(
@@ -255,7 +187,7 @@ def update_pet(pet_id, data, user):
 
 
 def photo_upload_url(pet_id, data, user):
-    # Verifica a permissão antes de gerar a URL do S3.
+    # Authorize access before issuing an S3 upload URL.
     with connect() as conn:
         _get_accessible_pet(conn, pet_id, user)
 
@@ -293,7 +225,7 @@ def register_photo(pet_id, data, user):
             'Invalid photo object key.'
         )
 
-    # Verifica se o usuário pode gerenciar esse pet.
+    # Authorize before accessing S3.
     with connect() as conn:
         _get_accessible_pet(conn, pet_id, user)
 
@@ -326,44 +258,30 @@ def register_photo(pet_id, data, user):
     except HTTPException:
         raise
 
-    except Exception:
+    except (BotoCoreError, ClientError):
         raise HTTPException(
             400,
             'Uploaded photo could not be verified.'
         ) from None
 
     with connect() as conn:
-        _get_accessible_pet(conn, pet_id, user)
-
-        count = conn.execute(
-            'SELECT count(*) AS n FROM pet_photos WHERE pet_id=%s',
-            (pet_id,)
-        ).fetchone()['n']
-
-        if count >= 5:
-            client.delete_object(
-                Bucket=settings.s3_bucket,
-                Key=data.s3_key
-            )
-
-            raise HTTPException(
-                409,
-                'A pet can have at most five photos.'
-            )
-
+        _get_accessible_pet(conn, pet_id, user, lock=True)
         row = conn.execute(
-            '''
-            INSERT INTO pet_photos(
-                pet_id,
-                s3_key,
-                is_primary,
-                position
-            )
-            VALUES (%s, %s, %s, %s)
-            RETURNING *
-            ''',
-            (pet_id, data.s3_key, count == 0, count)
+            'SELECT * FROM pet_photos WHERE pet_id=%s AND s3_key=%s',
+            (pet_id, data.s3_key)
         ).fetchone()
+        if not row:
+            count = conn.execute(
+                'SELECT count(*) AS n FROM pet_photos WHERE pet_id=%s', (pet_id,)
+            ).fetchone()['n']
+            if count >= 5:
+                client.delete_object(Bucket=settings.s3_bucket, Key=data.s3_key)
+                raise HTTPException(409, 'A pet can have at most five photos.')
+            row = conn.execute(
+                'INSERT INTO pet_photos(pet_id,s3_key,is_primary,position) '
+                'VALUES (%s,%s,%s,%s) RETURNING *',
+                (pet_id, data.s3_key, count == 0, count)
+            ).fetchone()
 
         url = client.generate_presigned_url(
             'get_object',

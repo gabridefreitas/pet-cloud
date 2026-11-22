@@ -1,7 +1,9 @@
 from fastapi import APIRouter
+
 from petcloud.dependencies import Authenticated
-from petcloud.schemas import RegisterInput, LoginInput, TokenResponse, User
+from petcloud.schemas import LoginInput, RegisterInput, TokenResponse, User
 from petcloud.services import auth
+
 router=APIRouter(prefix='/auth',tags=['Authentication'])
 @router.post('/register',response_model=TokenResponse,status_code=201)
 def register(data:RegisterInput): return auth.register(data)

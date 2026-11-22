@@ -15,7 +15,9 @@ services:
       timeout: 5s
       retries: 10
   api:
-    build: ./api
+    build:
+      context: .
+      dockerfile: api/Dockerfile
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-petcloud}:${POSTGRES_PASSWORD:-petcloud_local}@db:5432/${POSTGRES_DB:-petcloud}
       CORS_ORIGINS: '["http://localhost:5173"]'
@@ -25,6 +27,12 @@ services:
       AWS_REGION: ${AWS_REGION:-us-east-1}
     ports:
       - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     depends_on:
       db:
         condition: service_healthy

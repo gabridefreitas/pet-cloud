@@ -3,8 +3,8 @@
  *
  * Field names use snake_case so they match the PostgreSQL (RDS) columns and
  * the JSON returned by the FastAPI backend without a mapping layer. No schema
- * migration exists yet: these types are the proposed contract and must be kept
- * in sync with the API's Pydantic models once they are written.
+ * migration tooling is used: these types are the contract implemented by the
+ * API's Pydantic models.
  */
 
 /** UUID primary key. */
