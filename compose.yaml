@@ -1,3 +1,5 @@
+name: pet-cloud
+
 services:
   db:
     image: postgres:17
@@ -14,6 +16,20 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+  web:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    ports:
+      - "127.0.0.1:5173:5173"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5173').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      api:
+        condition: service_healthy
   api:
     build:
       context: .

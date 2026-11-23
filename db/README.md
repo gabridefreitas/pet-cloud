@@ -8,7 +8,7 @@ Start the stack from the repository root, then populate an empty database:
 
 ```sh
 cp .env.example .env
-docker compose up --build --wait
+docker compose -f compose.yaml -f compose.local.yaml up --build --wait
 docker compose exec api python -m scripts.seed_demo
 ```
 

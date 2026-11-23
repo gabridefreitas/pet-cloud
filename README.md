@@ -29,23 +29,22 @@ Start Docker Desktop, then run from the repository root:
 
 ```sh
 cp .env.example .env
-docker compose up --build --wait
+docker compose -f compose.yaml -f compose.local.yaml up --build --wait
 docker compose exec api python -m scripts.seed_demo
 ```
 
-In another terminal:
-
-```sh
-cd app
-pnpm install
-cp .env.example .env
-pnpm dev
-```
+The Compose project is named `pet-cloud` and starts the frontend, API and database.
+The local override keeps PostgreSQL inside Docker, binds the frontend/API only
+to `127.0.0.1` and disables S3. Container networking retains Docker defaults;
+this configuration does not impose an outbound firewall. Initial image builds
+download base images and package dependencies. No AWS resources
+are accessed or created by this local setup.
 
 Open http://localhost:5173. The footer shows whether the API is online.
 API docs are available at http://localhost:8000/docs.
 Visit http://localhost:8000/health/ready to check the database connection.
-Use `docker compose down` to stop the services while keeping database data.
+Use `docker compose -f compose.yaml -f compose.local.yaml down` to stop the services
+while keeping database data.
 
 For a Python virtual environment and backend live reload, follow `api/README.md`
 and start only PostgreSQL with `docker compose up -d db`.
