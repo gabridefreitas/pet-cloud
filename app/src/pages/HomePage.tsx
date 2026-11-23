@@ -1,6 +1,6 @@
 import { ClipboardCheck, HeartHandshake, HousePlus, MessageCircleHeart, PawPrint, Search, Stethoscope, UserPlus, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import heroPet from '../assets/hero-pet.png'
+import homeBulldog from '../assets/home-bulldog.png'
 import { outlineButtonClass, primaryButtonClass } from '../components/ui/styles'
 
 const STEPS = [
@@ -93,7 +93,7 @@ export function HomePage() {
           <div className="relative mx-auto aspect-square w-full max-w-md" aria-hidden>
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-brand-300 to-brand-600" />
             <div className="absolute inset-4 overflow-hidden rounded-full border-8 border-white/40">
-              <img src={heroPet} alt="" className="size-full object-cover" />
+              <img src={homeBulldog} alt="" className="size-full object-cover" />
             </div>
             <div className="absolute -top-2 right-6 size-10 rounded-full bg-brand-300" />
             <div className="absolute bottom-8 -left-4 size-6 rounded-full bg-brand-200" />

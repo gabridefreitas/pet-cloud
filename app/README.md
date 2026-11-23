@@ -60,7 +60,9 @@ lives in memory and resets when the page reloads. Demo accounts (password
 - `marina@petcloud.example`: adopter
 - `carlos@happypaws.example`: member of the Happy Paws Shelter organization
 
-Mock photos are in `public/mock-pets/`. Mocks remain an explicit optional demo and are never a fallback for API errors.
+Mock pets start without photos and use the shared placeholder. The fixed home
+image is `src/assets/home-bulldog.png` and is used only on the landing page.
+Mocks remain an explicit optional demo and are never a fallback for API errors.
 
 ## Source structure
 
