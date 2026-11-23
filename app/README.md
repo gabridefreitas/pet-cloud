@@ -36,6 +36,14 @@ Set `VITE_API_URL` to the HTTPS API URL before building for AWS.
 
 Vite embeds these values at build time. Never put secrets in them.
 
+Docker builds accept `VITE_API_URL` and `VITE_RUM_*` as public build arguments.
+Compose reads them from the root `.env`/process environment; the default API URL
+is `http://localhost:8000`. Host-run Vite reads `app/.env` instead. Rebuild the web
+image after changing its endpoint; setting container environment at runtime does
+not change a compiled bundle. The API URL must be reachable by the browser.
+Docker keeps `VITE_USE_MOCKS=false`, and the local Compose overlay forces RUM off.
+API credentials and database URLs must never be passed as frontend build arguments.
+
 ## Local API integration
 
 Start the API and populate the database using the [root instructions](../README.md#local-development).

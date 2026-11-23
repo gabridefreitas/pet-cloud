@@ -100,12 +100,34 @@ photo upload returns 503; pet browsing still works.
 
 | Variable | Purpose |
 | --- | --- |
-| `DATABASE_URL` | Local PostgreSQL connection |
+| `DATABASE_URL` | PostgreSQL URI, including any required TLS options; Compose defaults to the local database when empty/unset |
 | `CORS_ORIGINS` | Allowed frontend origins as a JSON array |
 | `JWT_SECRET` | Token signing secret; example values are for local development |
 | `JWT_EXP_MINUTES` | Access token lifetime in minutes |
 | `S3_BUCKET` | Existing private bucket for pet photos; empty disables uploads |
 | `AWS_REGION` | Bucket region |
+
+All API settings are runtime inputs. In Compose, the root `.env` or process
+environment supplies them to the container; a nonempty `DATABASE_URL` overrides
+the URI assembled from `POSTGRES_*`. `CORS_ORIGINS` accepts a JSON array of
+browser origins, including scheme/host/port and no page paths. The default is
+`["http://localhost:5173"]`. For host execution from `api/`, settings read
+`api/.env`; process environment overrides that file. No cloud secret retrieval
+is required, and the Docker image excludes `.env` files.
+
+For a real deployment, inject the connection URI and signing secret at runtime
+through the authorized secret-delivery mechanism. PostgreSQL TLS options travel
+in the URI query, for example `?sslmode=verify-full&sslrootcert=/path/to/mounted/ca.pem`.
+Use the actual database hostname and a trusted CA file mounted in the API container;
+percent-encode special characters in URI credentials. Local PostgreSQL uses its
+existing non-TLS Docker connection. Certificate delivery and a real RDS TLS handshake
+are deferred infrastructure checks; this implementation does not contact RDS.
+
+Restart a host-run API or recreate the Compose API service after changing settings;
+settings are cached per process. Signing-key changes invalidate old tokens. Local
+defaults and fictional demo credentials require no AWS setup. The local overlay
+forces `S3_BUCKET` empty; API logs remain stdout/stderr without `awslogs` enabled.
+Do not put API runtime secrets in `VITE_*` variables or frontend build arguments.
 
 Each request writes a JSON event to stdout with method, route template, status
 and duration. Authentication failures, denied access and unexpected errors also
