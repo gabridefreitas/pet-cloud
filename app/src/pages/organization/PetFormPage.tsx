@@ -144,11 +144,6 @@ export function PetFormPage() {
       setError(input)
       return
     }
-    if (photos.length === 0 && !createdPetId) {
-      setError('Add at least one photo. Pets with photos are adopted much faster.')
-      return
-    }
-
     setError(null)
     setProgress('Saving pet…')
     let petId: string | null = createdPetId
@@ -296,7 +291,7 @@ export function PetFormPage() {
           </fieldset>
 
           <fieldset disabled={submitting}>
-            <legend className="font-semibold text-brand-900">Photos</legend>
+            <legend className="font-semibold text-brand-900">Photos (optional)</legend>
             <p className="mt-1 text-sm text-gray-600">
               Up to {MAX_PHOTOS} images (JPEG, PNG, or WebP, 5 MB each). The first one is the cover photo.
             </p>
