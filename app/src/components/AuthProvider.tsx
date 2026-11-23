@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { AuthContext, type AuthContextValue } from '../hooks/useAuth'
-import { ApiError, getAuthToken, setAuthToken, UNAUTHORIZED_EVENT } from '../services/api'
+import { ApiError, getAuthToken, setAuthToken, TOKEN_STORAGE_KEY, UNAUTHORIZED_EVENT } from '../services/api'
 import * as authService from '../services/auth'
 import type { TokenResponse, User } from '../types'
 
@@ -40,8 +40,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const handleUnauthorized = () => setUser(null)
+    const handleStorage = (event: StorageEvent) => {
+      if (event.storageArea !== localStorage) return
+      if (event.key !== TOKEN_STORAGE_KEY && event.key !== null) return
+      if (event.newValue === getAuthToken()) return
+      // Reload from shared storage to discard the old identity, cached data and
+      // in-flight work together. This also handles localStorage.clear().
+      window.location.reload()
+    }
     window.addEventListener(UNAUTHORIZED_EVENT, handleUnauthorized)
-    return () => window.removeEventListener(UNAUTHORIZED_EVENT, handleUnauthorized)
+    window.addEventListener('storage', handleStorage)
+    return () => {
+      window.removeEventListener(UNAUTHORIZED_EVENT, handleUnauthorized)
+      window.removeEventListener('storage', handleStorage)
+    }
   }, [])
 
   const value = useMemo<AuthContextValue>(() => {

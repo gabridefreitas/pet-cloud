@@ -58,6 +58,15 @@ offers retry without silently discarding the token. Mock and real tokens use
 separate storage keys. Catalog and portal services show loading, empty and
 error states rather than falling back to mock data.
 
+Tabs in the same browser profile and origin share the session through localStorage.
+Login, logout, expiry-driven session removal and account changes in another tab
+trigger a reload of the current URL, restoring the latest shared identity and
+discarding the previous page's private data and in-flight work. Unsaved forms in
+those tabs are discarded too. Storage changes for unrelated keys, sessionStorage
+or the other mock/real mode do not trigger this reload. Separate browser profiles
+remain independent. If localStorage is unavailable, the existing per-tab in-memory
+fallback still works; cross-tab synchronization requires shared storage.
+
 Organization members can add photos to existing pets from their portal. If a
 photo fails during new-pet creation, retry uploads the remaining photos without
 creating the pet again. Photos are rendered from the API's `photos[].url`.
