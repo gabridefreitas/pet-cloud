@@ -20,6 +20,12 @@ services:
     build:
       context: .
       dockerfile: app/Dockerfile
+      args:
+        VITE_RUM_ENABLED: ${VITE_RUM_ENABLED:-false}
+        VITE_RUM_APP_MONITOR_ID: ${VITE_RUM_APP_MONITOR_ID:-}
+        VITE_RUM_REGION: ${VITE_RUM_REGION:-}
+        VITE_RUM_IDENTITY_POOL_ID: ${VITE_RUM_IDENTITY_POOL_ID:-}
+        VITE_RUM_APP_VERSION: ${VITE_RUM_APP_VERSION:-0.1.0}
     ports:
       - "127.0.0.1:5173:5173"
     healthcheck:

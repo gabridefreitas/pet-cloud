@@ -4,6 +4,7 @@ import json
 import logging
 import sys
 import time
+import traceback
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -14,22 +15,43 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from petcloud.config import get_settings
-from petcloud.routers import adoptions, auth, logs, organization, pets
+from petcloud.routers import adoptions, auth, organization, pets
 from petcloud.services.database import connect
 
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
-        payload={'timestamp':self.formatTime(record),'level':record.levelname,'logger':record.name,'message':record.getMessage()}
-        try:
-            structured=json.loads(record.getMessage())
-            if isinstance(structured,dict): payload.update(structured)
-        except (ValueError, TypeError): pass
-        if record.exc_info: payload['exception']=self.formatException(record.exc_info)
-        return json.dumps(payload,ensure_ascii=False,default=str)
+        payload = {
+            'timestamp': self.formatTime(record), 'level': record.levelname,
+            'logger': record.name, 'message': record.getMessage(),
+        }
+        for key in ('event', 'reason', 'method', 'route', 'status', 'duration_ms',
+                    'user_id', 'organization_id', 'required_role'):
+            if hasattr(record, key):
+                payload[key] = getattr(record, key)
+        if record.exc_info and record.exc_info[0]:
+            # Exception messages/locals can contain submitted data or signed URLs.
+            payload['exception'] = {
+                'type': record.exc_info[0].__name__,
+                'frames': [
+                    {'file': Path(frame.filename).name, 'line': frame.lineno, 'function': frame.name}
+                    for frame in traceback.extract_tb(record.exc_info[2])
+                ],
+            }
+        return json.dumps(payload, ensure_ascii=False, default=str)
 
-handler=logging.StreamHandler(sys.stdout); handler.setFormatter(JsonFormatter())
-root=logging.getLogger(); root.handlers=[handler]; root.setLevel(logging.INFO)
+
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(JsonFormatter())
+root = logging.getLogger()
+root.handlers = [handler]
+root.setLevel(logging.INFO)
+# Our structured request log replaces Uvicorn's raw URL/query-string access log.
+logging.getLogger('uvicorn.access').disabled = True
+# Uvicorn also logs unhandled exceptions; apply the same safe formatter there.
+server_errors = logging.getLogger('uvicorn.error')
+server_errors.handlers = [handler]
+server_errors.propagate = False
 settings=get_settings(); SCHEMA_PATH=Path(__file__).resolve().parents[2] / 'db' / 'schema.sql'
 @asynccontextmanager
 async def lifespan(_:FastAPI):
@@ -49,8 +71,11 @@ async def request_logging(request:Request,call_next):
         response=await call_next(request); status=response.status_code; return response
     finally:
         elapsed=round((time.perf_counter()-started)*1000,2)
-        logging.getLogger('petcloud.requests').info(json.dumps({'event':'http_request','method':request.method,
-            'route':request.url.path,'status':status,'duration_ms':elapsed},ensure_ascii=False))
+        logging.getLogger('petcloud.requests').info('http_request', extra={
+            'event': 'http_request', 'method': request.method,
+            'route': getattr(request.scope.get('route'), 'path', '<unmatched>'),
+            'status': status, 'duration_ms': elapsed,
+        })
 
 @app.exception_handler(HTTPException)
 async def http_error_handler(_:Request,exc:HTTPException):
@@ -79,4 +104,3 @@ app.include_router(auth.router)
 app.include_router(pets.router)
 app.include_router(adoptions.router)
 app.include_router(organization.router)
-app.include_router(logs.router)

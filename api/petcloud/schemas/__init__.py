@@ -177,13 +177,3 @@ class RegisterInput(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: Literal['bearer'] = 'bearer'
-
-
-class BrowserLog(BaseModel):
-    level: Literal['error', 'warning', 'info'] = 'error'
-    message: str = Field(min_length=1, max_length=10000)
-    source: str | None = None
-    stack: str | None = None
-    url: str | None = None
-    timestamp: datetime | None = None
-    context: dict | None = None

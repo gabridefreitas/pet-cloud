@@ -1,9 +1,12 @@
+import logging
+
 import psycopg
 from fastapi import HTTPException
 
 from petcloud.services.common import adoption_details
 from petcloud.services.database import connect
 
+logger = logging.getLogger('petcloud.adoptions')
 
 def create_request(data,user):
     with connect() as conn:
@@ -26,7 +29,12 @@ def organization_requests(user):
 def decide_request(request_id,data,user):
     with connect() as conn:
         row=conn.execute('SELECT * FROM adoption_requests WHERE id=%s AND organization_id=%s FOR UPDATE',(request_id,user['organization_id'])).fetchone()
-        if not row: raise HTTPException(404,'Adoption request not found.')
+        if not row:
+            logger.warning('access_denied', extra={
+                'event': 'access_denied', 'reason': 'request_not_accessible',
+                'user_id': str(user['id']), 'organization_id': str(user['organization_id']),
+            })
+            raise HTTPException(404,'Adoption request not found.')
         if row['status']!='pending': raise HTTPException(409,'Only pending requests can be reviewed.')
         if data.status=='approved':
             pet=conn.execute('SELECT * FROM pets WHERE id=%s FOR UPDATE',(row['pet_id'],)).fetchone()
