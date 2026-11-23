@@ -62,6 +62,14 @@ Organization members can add photos to existing pets from their portal. If a
 photo fails during new-pet creation, retry uploads the remaining photos without
 creating the pet again. Photos are rendered from the API's `photos[].url`.
 
+Organization accounts and portal operations are implemented **Extra** functionality
+beyond the Grade A adopter journey. Organizations contact the PetCloud team for
+[assisted provisioning](../db/README.md#assisted-organization-provisioning-extra);
+public signup creates adopters only. The footer's Organization portal link goes
+to `/organization`, which redirects visitors to login and requires organization
+membership. Organization login always redirects to that dashboard. There is no
+global application administrator or public organization registration.
+
 ## Mock mode
 
 While `VITE_USE_MOCKS` is on, `src/mocks/` answers every request with the same

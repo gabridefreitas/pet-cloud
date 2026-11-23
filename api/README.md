@@ -48,13 +48,16 @@ Only two user roles exist:
 
 Every pet and adoption request belongs to an organization. Creation derives the
 organization from the authenticated member; clients cannot assign another one.
-Members of organization B cannot modify pets, issue upload URLs, or review
+Members of organization B cannot modify pets, upload their photos, or review
 requests belonging to organization A. Unauthorized resource access returns 404.
 
 Accounts are authenticated with `Authorization: Bearer <JWT>`. Only adopters
 can register publicly. The demo seed creates the two organization accounts;
 `python -m scripts.create_organization` can create another local organization
-and its member without any administrator user in the application.
+and its member without any administrator user in the application. Organization
+accounts and operations are **Extra** relative to the Grade A adopter journey;
+the [assisted provisioning procedure](../db/README.md#assisted-organization-provisioning-extra)
+documents the existing command and its first-member limitation.
 
 Only available pets accept requests. Duplicate pending requests return 409.
 Only pending requests can be reviewed. Approval locks the pet and changes its

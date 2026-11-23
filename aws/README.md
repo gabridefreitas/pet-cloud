@@ -1,8 +1,11 @@
 # AWS deployment plan
 
-Infrastructure is not provisioned by this starter. These steps can initially
-be performed in the AWS console; deployment scripts or infrastructure as code
-can be added once the region, domain, and resource names are agreed on.
+This is the deferred AWS deployment plan, not a record of deployed controls.
+Application code and local execution are implemented; no AWS account inspection,
+provisioning or activation is performed by these instructions or local startup.
+The [current contract diagram](../README.md#aws-architecture) supplements the
+original proposal model. See the [security case study](security-case-study.md)
+for implemented, optional and cloud-only control status.
 
 ## Frontend: S3 + CloudFront
 
@@ -12,7 +15,7 @@ with CloudFront Origin Access Control (OAC), granting that distribution read
 access via the bucket policy. S3 website hosting is not needed for this setup.
 Set CloudFront's default root object to `index.html` and redirect HTTP to HTTPS.
 
-When client-side routes are added, configure a CloudFront Function to rewrite
+The frontend already has client-side routes. Configure a CloudFront Function to rewrite
 extensionless frontend routes to `/index.html`. Avoid rewriting asset or API
 requests. Invalidate updated frontend files when deploying.
 
@@ -24,7 +27,7 @@ at build time. Browser environment variables must never contain secrets.
 Run the API container on EC2, behind an HTTPS reverse proxy such as Caddy or
 Nginx. The HTTPS frontend needs an HTTPS API endpoint. Set `DATABASE_URL` for
 RDS and `CORS_ORIGINS` to a JSON array containing the actual frontend origin.
-Allow required API methods as features are added. Use an instance IAM role
+Preserve the API's implemented CORS methods and configured origins. Use an instance IAM role
 for AWS access instead of static access keys.
 
 ## Database: RDS PostgreSQL
@@ -32,7 +35,9 @@ for AWS access instead of static access keys.
 Use a private RDS instance reachable from EC2. Its security group should allow
 port 5432 from the backend's security group. Store production credentials in
 Secrets Manager or SSM Parameter Store and use TLS for database connections.
-Apply the same future versioned migrations used in local development.
+The current application uses `db/schema.sql` as its single initial schema, with
+no migration tooling. Database deployment/change procedures remain separate
+work; do not reset an existing database or assume migrations already exist.
 
 ## Pet images: separate S3 bucket
 

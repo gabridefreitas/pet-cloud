@@ -6,7 +6,7 @@ const CURRENT_YEAR = new Date().getFullYear()
 
 const HELP_LINKS = [
   { to: '/adopt', label: 'Adopt a pet' },
-  { to: '/rehome', label: 'Rehome a pet' },
+  { to: '/organization', label: 'Organization portal' },
   { to: '/about', label: 'About PetCloud' },
 ]
 
