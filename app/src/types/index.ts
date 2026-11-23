@@ -3,8 +3,8 @@
  *
  * Field names use snake_case so they match the PostgreSQL (RDS) columns and
  * the JSON returned by the FastAPI backend without a mapping layer. No schema
- * migration exists yet: these types are the proposed contract and must be kept
- * in sync with the API's Pydantic models once they are written.
+ * migration tooling is used: these types are the contract implemented by the
+ * API's Pydantic models.
  */
 
 /** UUID primary key. */
@@ -230,24 +230,6 @@ export interface RegisterInput {
 export interface TokenResponse {
   access_token: string
   token_type: 'bearer'
-}
-
-// ---------------------------------------------------------------------------
-// Photo upload (S3 presigned URL flow)
-// ---------------------------------------------------------------------------
-
-/** Sent to the API to request a presigned PUT URL for a new pet photo. */
-export interface PhotoUploadRequest {
-  filename: string
-  content_type: string
-}
-
-export interface PhotoUploadTicket {
-  /** Presigned S3 URL; the browser PUTs the file here directly. */
-  upload_url: string
-  /** Object key to send back to the API to register the photo. */
-  s3_key: string
-  expires_in: number
 }
 
 // ---------------------------------------------------------------------------

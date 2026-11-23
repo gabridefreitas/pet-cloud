@@ -1,0 +1,11 @@
+# Local execution: no database host port, no S3 and host bindings limited to loopback.
+services:
+  db:
+    ports: !reset []
+  api:
+    environment:
+      S3_BUCKET: ""
+networks:
+  default:
+    driver_opts:
+      com.docker.network.bridge.host_binding_ipv4: "127.0.0.1"

@@ -2,8 +2,8 @@
  * Mock data based on the "Adopt a pet" design reference. Used to build and
  * review screens before the API endpoints exist; delete once they do.
  *
- * Photos live in `public/mock-pets/` and are reused across cards. In
- * production, photo URLs come from S3 via the API.
+ * Seed pets have no bundled photos and use the shared image placeholder.
+ * Real photo URLs come from S3 via the API.
  *
  * The exported `mock*` functions mirror the pet endpoints of the API,
  * including its auth checks and HTTP errors. Data lives in memory and resets
@@ -28,19 +28,6 @@ import type {
 import { isInAgeGroup } from '../utils/pets'
 import { mockDelay, nowIso } from './delay'
 import { requireMockUser } from './users'
-
-const MOCK_PHOTOS = ['bulldog', 'boston-terrier', 'golden-retriever'] as const
-type MockPhoto = (typeof MOCK_PHOTOS)[number]
-
-const PHOTO_BY_NAME: Record<string, MockPhoto> = {
-  Pitter: 'bulldog',
-  Snoopy: 'boston-terrier',
-  Lola: 'golden-retriever',
-  Balto: 'golden-retriever',
-  Shadow: 'golden-retriever',
-  Magie: 'golden-retriever',
-  Max: 'bulldog',
-}
 
 function daysAgo(days: number): string {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
@@ -281,16 +268,7 @@ export const mockPets: Pet[] = seeds.map((seed, index) => {
     is_neutered: seed.age_months >= 6,
     status: 'available',
     country: 'USA',
-    photos: [
-      {
-        id: `${id}-photo-1`,
-        pet_id: id,
-        s3_key: `pets/${id}/1.jpg`,
-        url: `/mock-pets/${PHOTO_BY_NAME[seed.name] ?? MOCK_PHOTOS[index % MOCK_PHOTOS.length]}.png`,
-        is_primary: true,
-        position: 0,
-      },
-    ],
+    photos: [],
     created_at: createdAt,
     updated_at: createdAt,
   }
@@ -381,7 +359,7 @@ export async function updateMockPetStatus(id: string, status: PetStatus, signal?
 }
 
 /**
- * Mock of the photo upload flow (presigned URL + S3 PUT + registration).
+ * Mock of the API-managed photo upload flow.
  * The file is kept as a local object URL instead of being uploaded.
  */
 export async function addMockPetPhoto(petId: string, file: File, signal?: AbortSignal): Promise<PetPhoto> {

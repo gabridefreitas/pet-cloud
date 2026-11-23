@@ -1,106 +1,113 @@
 # PetCloud API
 
-Backend em Python 3.12+ com FastAPI, Pydantic v2, PostgreSQL (psycopg 3), JWT e S3.
+FastAPI and Pydantic backend for the adoption workflow, using PostgreSQL,
+JWT authentication with Argon2 password hashes, and private S3 photo storage.
+Python 3.12+ is required when running outside Docker.
 
-## Executar localmente
+## Run locally
 
-Na raiz do repositório:
+From the repository root, with Docker Desktop running:
 
-```bash
+```sh
 cp .env.example .env
-docker compose up --build -d
+docker compose -f compose.yaml -f compose.local.yaml up --build --wait
+docker compose exec api python -m scripts.seed_demo
 ```
 
-Documentação interativa: http://localhost:8000/docs  
-Liveness: `GET /health`  
-Readiness (PostgreSQL): `GET /health/ready`
+See [demo accounts and sample data](../db/README.md). The seed is intended for
+an empty local database and never clears existing data.
 
-Execução sem Docker (com PostgreSQL já iniciado):
+For a Python virtual environment and live reload:
 
-```powershell
+```sh
+docker compose up -d db
 cd api
-python -m venv .venv
-.venv\\Scripts\\activate
-python -m pip install -e .
-Copy-Item .env.example .env
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[dev]'
+cp .env.example .env
+python -m scripts.seed_demo
 uvicorn petcloud.main:app --reload
 ```
 
-## Organização do código
+Interactive API documentation: http://localhost:8000/docs.
+`GET /health` checks API liveness; `GET /health/ready` checks the database.
+Run backend lint with `python -m ruff check petcloud scripts` from `api/`.
 
-```text
-petcloud/
-  main.py                 # criação do FastAPI, CORS, middleware e routers
-  config.py               # configurações por variáveis de ambiente
-  dependencies.py         # JWT, usuário autenticado e autorização por papel
-  schemas/                # modelos Pydantic espelhando app/src/types/index.ts
-  routers/                # endpoints HTTP (auth, pets, adoptions, organization, logs)
-  services/               # regras de negócio e acesso ao PostgreSQL/S3
-  schema.sql              # estrutura inicial do banco
-```
+## Contract and ownership
 
-Os schemas representam `User`, `Organization`, `Pet`, `PetPhoto`, `PetDetails`, `AdoptionRequest`, `AdoptionRequestDetails`, entradas, decisões, paginação, filtros, autenticação e upload. Mantenha os tipos Python sincronizados com `app/src/types/index.ts`.
+The frontend's `app/src/types/index.ts`, services, and rendered fields define
+the HTTP contract. The Pydantic models implement that contract, including
+`PetDetails.organization`, `Pet.photos[].url`, and paginated catalog results.
+See the [endpoint table](../app/README.md#api-contract).
 
-## Rotas
+Only two user roles exist:
 
-- `POST /auth/register` — cria conta de adotante.
-- `POST /auth/login` — autentica e emite JWT.
-- `GET /auth/me` — retorna o usuário autenticado.
-- `GET /pets`, `GET /pets/{pet_id}` — catálogo e detalhes públicos.
-- `POST /pets`, `PATCH /pets/{pet_id}`, `GET /organizations/me/pets` — gestão de pets por membro da ONG.
-- `POST /pets/{pet_id}/photos/upload-url`, `POST /pets/{pet_id}/photos` — fluxo de upload S3.
-- `POST /adoption-requests`, `GET /adoption-requests/me` — ações do adotante.
-- `GET /organizations/me/adoption-requests`, `PATCH /adoption-requests/{request_id}` — fila e decisão da ONG.
-- `POST /logs` — recebe erros do navegador e grava JSON no stdout.
+- `adopter`: public registration, adoption requests, and own request history.
+- `organization_member`: pet management and request decisions for the linked organization.
 
-## Autenticação e permissões
+Every pet and adoption request belongs to an organization. Creation derives the
+organization from the authenticated member; clients cannot assign another one.
+Members of organization B cannot modify pets, issue upload URLs, or review
+requests belonging to organization A. Unauthorized resource access returns 404.
 
-Envie `Authorization: Bearer <JWT>` nas rotas protegidas. Senhas são armazenadas com Argon2id via `pwdlib`; nunca são retornadas pela API. O cadastro público cria somente `adopter`. Rotas de ONG exigem `organization_member` e restringem os dados à organização associada ao usuário.
+Accounts are authenticated with `Authorization: Bearer <JWT>`. Only adopters
+can register publicly. The demo seed creates the two organization accounts;
+`python -m scripts.create_organization` can create another local organization
+and its member without any administrator user in the application.
 
-## Regras de adoção
+Only available pets accept requests. Duplicate pending requests return 409.
+Only pending requests can be reviewed. Approval locks the pet and changes its
+status to `pending`; another approval for an unavailable pet returns 409.
 
-- Apenas adotantes podem criar e listar suas solicitações.
-- Só é possível solicitar um pet com status `available`.
-- O banco impede mais de uma solicitação `pending` do mesmo adotante para o mesmo pet; conflito retorna HTTP 409.
-- Só membros da ONG proprietária podem listar/revisar solicitações.
-- Solicitação inexistente ou fora da ONG retorna 404; solicitação não pendente retorna 409.
-- Ao aprovar, o pet muda para `pending`; se já não estiver `available`, a aprovação retorna 409.
-- Erros HTTP usam `{ "detail": ... }`.
+## Database
 
-## Logs
+`db/schema.sql` is the single initial schema, applied at API startup or by the
+demo seed. The image is built from the repository root with `api/Dockerfile`.
+Database tables store adoption data and S3 object keys, never image bytes or
+expiring presigned URLs. No migrations are introduced for this local stage.
 
-Cada requisição gera uma linha JSON no stdout com `method`, `route`, `status` e `duration_ms`. O `POST /logs` aceita `level`, `message`, `source`, `stack`, `url`, `timestamp` e `context`; o payload é gravado como JSON. Em produção, encaminhe stdout/stderr para CloudWatch Logs.
+## Photos
 
-## Variáveis de ambiente
+Set `S3_BUCKET` to an existing private bucket and `AWS_REGION` to its region.
+Local boto3 uses the default AWS credential chain; no credentials are sent to
+the browser. Configuring or provisioning AWS resources is a separate action.
 
-| Variável | Finalidade |
-|---|---|
-| `DATABASE_URL` | conexão PostgreSQL/RDS |
-| `CORS_ORIGINS` | origens permitidas pelo CORS em formato JSON |
-| `JWT_SECRET` | segredo de assinatura JWT; use segredo aleatório forte |
-| `JWT_EXP_MINUTES` | validade do token em minutos |
-| `S3_BUCKET` | bucket para fotos dos pets |
-| `AWS_REGION` | região do bucket S3 |
+1. The browser sends `POST /pets/{id}/photos` with multipart field `file` and its JWT.
+2. The API checks organization ownership, declared type, image signature and size.
+3. The API uploads the file to S3 and registers its permanent key in `pet_photos`.
+4. The response is a `PetPhoto` with a presigned GET `url`. Catalog and detail
+   responses also generate fresh GET URLs valid for one hour; the browser renders them.
 
-## AWS: caminho recomendado
+JPEG, PNG and WebP are accepted, up to 5 MB and five photos per pet. Retrying the
+same file for the same pet returns its existing photo without another S3 upload.
+Uploads for a pet are serialized to enforce the limit. If photo registration
+fails after upload, the API attempts to remove the newly uploaded object before
+releasing the pet lock. An ambiguous database commit failure may leave an object
+for later reconciliation; S3 and PostgreSQL do not share a transaction.
+The organization portal supports adding photos to seeded pets and retrying a
+partially completed new-pet upload without creating another pet.
 
-1. Criar VPC com sub-redes privadas para RDS e API; expor somente o Application Load Balancer.
-2. Publicar a API em ECS Fargate (ou EC2), usando imagem Docker e HTTPS via ALB/ACM.
-3. Usar Amazon RDS for PostgreSQL em sub-redes privadas, backups automáticos e credenciais no Secrets Manager.
-4. Criar bucket S3 privado, bloquear acesso público e habilitar criptografia; configurar CORS do bucket para `PUT` apenas da origem do frontend.
-5. Dar à task role do ECS permissões mínimas `s3:PutObject`, `s3:GetObject`, `s3:HeadObject` e `s3:DeleteObject` no prefixo de fotos.
-6. Definir `JWT_SECRET` no Secrets Manager, `S3_BUCKET`, `AWS_REGION`, `DATABASE_URL` e `CORS_ORIGINS` como configuração/segredos da task.
-7. Enviar logs stdout/stderr ao CloudWatch Logs e configurar alarmes para 5xx, latência e falhas de saúde.
-8. Hospedar o frontend em S3 + CloudFront (ou Amplify), restringindo CORS ao domínio publicado.
+There is no browser-to-S3 PUT or upload-ticket endpoint. The backend identity
+needs object read, write and delete permissions in the photo prefix. No S3
+browser-upload CORS configuration is required for this flow. Bucket access
+remains private, but anyone holding a signed GET URL can read that object until
+it expires. The browser downloads displayed images using those returned URLs;
+image bytes are not proxied through the API on reads. With no bucket configured,
+photo upload returns 503; pet browsing still works.
 
-Não use credenciais AWS estáticas na aplicação hospedada: prefira IAM Task Role. O schema é aplicado no startup para ambiente de desenvolvimento; em produção, adote migrations versionadas e execução controlada no pipeline de deploy.
+## Configuration and logs
 
-## Contas de ONG
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | Local PostgreSQL connection |
+| `CORS_ORIGINS` | Allowed frontend origins as a JSON array |
+| `JWT_SECRET` | Token signing secret; example values are for local development |
+| `JWT_EXP_MINUTES` | Access token lifetime in minutes |
+| `S3_BUCKET` | Existing private bucket for pet photos; empty disables uploads |
+| `AWS_REGION` | Bucket region |
 
-O cadastro público não cria organizações. Um administrador deve provisionar a organização e seu primeiro usuário `organization_member` pelo script:
-
-```bash
-python -m scripts.create_organization
-```
-
-Execute no ambiente da API após a criação das tabelas.
+Each request writes JSON logs to stdout. `POST /logs` accepts browser error
+reports. HTTP errors use `{ "detail": ... }`, including validation errors with
+status 422. Set the frontend's optional `VITE_LOG_ENDPOINT` to
+`http://localhost:8000/logs` to send browser errors to the API.

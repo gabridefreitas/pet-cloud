@@ -1,13 +1,12 @@
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE TABLE IF NOT EXISTS organizations (
  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
- name TEXT NOT NULL, description TEXT, email TEXT NOT NULL UNIQUE, phone TEXT, address TEXT,
+ name TEXT NOT NULL, description TEXT, email TEXT NOT NULL, phone TEXT, address TEXT,
  city TEXT NOT NULL, state TEXT NOT NULL, country TEXT NOT NULL DEFAULT 'Brazil',
  logo_key TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE TABLE IF NOT EXISTS users (
  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
- email TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL, full_name TEXT NOT NULL,
+ email TEXT NOT NULL, password_hash TEXT NOT NULL, full_name TEXT NOT NULL,
  phone TEXT, role TEXT NOT NULL CHECK (role IN ('adopter','organization_member')),
  organization_id UUID REFERENCES organizations(id), city TEXT, state TEXT,
  created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -44,3 +43,6 @@ CREATE INDEX IF NOT EXISTS ix_pets_org ON pets(organization_id, created_at DESC)
 CREATE INDEX IF NOT EXISTS ix_requests_adopter ON adoption_requests(adopter_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_requests_org ON adoption_requests(organization_id, created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_open_adoption_request ON adoption_requests(pet_id, adopter_id) WHERE status='pending';
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_users_email ON users(LOWER(email));
+CREATE UNIQUE INDEX IF NOT EXISTS uq_organizations_email ON organizations(LOWER(email));

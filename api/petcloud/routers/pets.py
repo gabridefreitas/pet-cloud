@@ -1,18 +1,24 @@
-
-from typing import Literal
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, UploadFile
 
-from petcloud.dependencies import AdminOrOrganizationMember
+from petcloud.dependencies import OrganizationMember
 from petcloud.schemas import (
-    Pet, PetDetails, PetInput, PetStatusUpdate,
-    PhotoUploadRequest, PhotoRegister,
-    PetSpecies, PetSex, PetSize, PetColor, PetStatus,
-    AgeGroup, Paginated, PetPhoto, PhotoUploadTicket
+    AgeGroup,
+    Paginated,
+    Pet,
+    PetColor,
+    PetDetails,
+    PetInput,
+    PetPhoto,
+    PetSex,
+    PetSize,
+    PetSpecies,
+    PetStatus,
+    PetStatusUpdate,
 )
 from petcloud.services import pets
-
 
 router = APIRouter(tags=['Pets'])
 
@@ -21,11 +27,11 @@ router = APIRouter(tags=['Pets'])
 def list_pets(
     species: PetSpecies | None = None,
     location: str | None = None,
-    size: list[PetSize] = Query(default=[]),
-    breed: list[str] = Query(default=[]),
-    color: list[PetColor] = Query(default=[]),
+    size: Annotated[list[PetSize] | None, Query()] = None,
+    breed: Annotated[list[str] | None, Query()] = None,
+    color: Annotated[list[PetColor] | None, Query()] = None,
     sex: PetSex | None = None,
-    age: list[AgeGroup] = Query(default=[]),
+    age: Annotated[list[AgeGroup] | None, Query()] = None,
     status: PetStatus = 'available',
     page: int = Query(1, ge=1),
     page_size: int = Query(9, ge=1, le=100)
@@ -42,14 +48,14 @@ def get_pet(pet_id: UUID):
 
 
 @router.get('/organizations/me/pets', response_model=list[Pet])
-def organization_pets(user: AdminOrOrganizationMember):
+def organization_pets(user: OrganizationMember):
     return pets.organization_pets(user)
 
 
 @router.post('/pets', response_model=Pet, status_code=201)
 def create_pet(
     data: PetInput,
-    user: AdminOrOrganizationMember
+    user: OrganizationMember
 ):
     return pets.create_pet(data, user)
 
@@ -58,31 +64,11 @@ def create_pet(
 def update_pet(
     pet_id: UUID,
     data: PetStatusUpdate,
-    user: AdminOrOrganizationMember
+    user: OrganizationMember
 ):
     return pets.update_pet(pet_id, data, user)
 
 
-@router.post(
-    '/pets/{pet_id}/photos/upload-url',
-    response_model=PhotoUploadTicket
-)
-def photo_upload_url(
-    pet_id: UUID,
-    data: PhotoUploadRequest,
-    user: AdminOrOrganizationMember
-):
-    return pets.photo_upload_url(pet_id, data, user)
-
-
-@router.post(
-    '/pets/{pet_id}/photos',
-    response_model=PetPhoto,
-    status_code=201
-)
-def register_photo(
-    pet_id: UUID,
-    data: PhotoRegister,
-    user: AdminOrOrganizationMember
-):
-    return pets.register_photo(pet_id, data, user)
+@router.post('/pets/{pet_id}/photos', response_model=PetPhoto, status_code=201)
+def upload_photo(pet_id: UUID, file: UploadFile, user: OrganizationMember):
+    return pets.upload_photo(pet_id, file, user)

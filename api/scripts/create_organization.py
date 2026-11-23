@@ -4,14 +4,13 @@ Run from api/: python -m scripts.create_organization
 The password is prompted without echoing and stored as an Argon2 hash.
 """
 from getpass import getpass
-import sys
 
-from pydantic import EmailStr, TypeAdapter
-from pwdlib import PasswordHash
-
-from petcloud.config import get_settings
 import psycopg
 from psycopg.rows import dict_row
+from pwdlib import PasswordHash
+from pydantic import EmailStr, TypeAdapter
+
+from petcloud.config import get_settings
 
 
 def main() -> None:

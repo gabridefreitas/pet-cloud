@@ -1,44 +1,23 @@
 
-import re
-from uuid import uuid4
+import hashlib
+import logging
 
-from fastapi import HTTPException
+import psycopg
+from botocore.exceptions import BotoCoreError, ClientError
+from fastapi import HTTPException, UploadFile
+from psycopg.pq import TransactionStatus
 
+from petcloud.services.common import ensure_s3, pet_details, pet_dict
 from petcloud.services.database import connect
-from petcloud.services.common import pet_dict, pet_details, ensure_s3
 
 
-def _is_admin(user):
-    return user['role'] == 'admin'
-
-
-def _get_accessible_pet(conn, pet_id, user):
-    """
-    Admin pode acessar qualquer pet.
-    Organization member só pode acessar pets da própria ONG.
-    """
-    if _is_admin(user):
-        row = conn.execute(
-            'SELECT * FROM pets WHERE id=%s',
-            (pet_id,)
-        ).fetchone()
-    else:
-        organization_id = user['organization_id']
-
-        if not organization_id:
-            raise HTTPException(
-                status_code=403,
-                detail='User is not associated with an organization.'
-            )
-
-        row = conn.execute(
-            'SELECT * FROM pets WHERE id=%s AND organization_id=%s',
-            (pet_id, organization_id)
-        ).fetchone()
-
+def _get_accessible_pet(conn, pet_id, user, *, lock=False):
+    row = conn.execute(
+        'SELECT * FROM pets WHERE id=%s AND organization_id=%s' + (' FOR UPDATE' if lock else ''),
+        (pet_id, user['organization_id'])
+    ).fetchone()
     if not row:
         raise HTTPException(404, 'Pet not found.')
-
     return row
 
 
@@ -104,7 +83,7 @@ def list_pets(
             SELECT p.*
             FROM pets p
             WHERE {where}
-            ORDER BY p.created_at DESC
+            ORDER BY p.created_at DESC, p.id DESC
             LIMIT %s OFFSET %s
             ''',
             [*params, page_size, (page - 1) * page_size]
@@ -133,28 +112,10 @@ def get_pet(pet_id):
 
 def organization_pets(user):
     with connect() as conn:
-        if _is_admin(user):
-            rows = conn.execute(
-                'SELECT * FROM pets ORDER BY created_at DESC'
-            ).fetchall()
-        else:
-            organization_id = user['organization_id']
-
-            if not organization_id:
-                raise HTTPException(
-                    status_code=403,
-                    detail='User is not associated with an organization.'
-                )
-
-            rows = conn.execute(
-                '''
-                SELECT *
-                FROM pets
-                WHERE organization_id=%s
-                ORDER BY created_at DESC
-                ''',
-                (organization_id,)
-            ).fetchall()
+        rows = conn.execute(
+            'SELECT * FROM pets WHERE organization_id=%s ORDER BY created_at DESC',
+            (user['organization_id'],)
+        ).fetchall()
 
         return [pet_dict(conn, row) for row in rows]
 
@@ -162,36 +123,9 @@ def organization_pets(user):
 def create_pet(data, user):
     payload = data.model_dump()
 
-    if _is_admin(user):
-        # Para administrador, a organização é opcional.
-        organization_id = payload.get('organization_id')
-    else:
-        # Para membro, utiliza automaticamente sua própria ONG.
-        organization_id = user['organization_id']
-
-        if not organization_id:
-            raise HTTPException(
-                status_code=403,
-                detail='User is not associated with an organization.'
-            )
+    payload['organization_id'] = user['organization_id']
 
     with connect() as conn:
-
-        # Só valida a organização quando ela foi informada.
-        if organization_id:
-            organization = conn.execute(
-                'SELECT id FROM organizations WHERE id=%s',
-                (organization_id,)
-            ).fetchone()
-
-            if not organization:
-                raise HTTPException(
-                    404,
-                    'Organization not found.'
-                )
-
-        payload['organization_id'] = organization_id
-
         row = conn.execute(
             '''
             INSERT INTO pets(
@@ -254,127 +188,74 @@ def update_pet(pet_id, data, user):
         return pet_dict(conn, row)
 
 
-def photo_upload_url(pet_id, data, user):
-    # Verifica a permissão antes de gerar a URL do S3.
+PHOTO_MAX_BYTES = 5 * 1024 * 1024
+PHOTO_EXTENSIONS = {'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp'}
+logger = logging.getLogger('petcloud.photos')
+
+
+def upload_photo(pet_id, photo: UploadFile, user):
+    # Check ownership before accessing storage or reading the uploaded file.
     with connect() as conn:
         _get_accessible_pet(conn, pet_id, user)
 
-    client, settings = ensure_s3()
-
-    name = re.sub(
-        r'[^a-zA-Z0-9._-]',
-        '_',
-        data.filename
-    )[:120]
-
-    key = f'pets/{pet_id}/{uuid4()}-{name}'
-
-    url = client.generate_presigned_url(
-        'put_object',
-        Params={
-            'Bucket': settings.s3_bucket,
-            'Key': key,
-            'ContentType': data.content_type
-        },
-        ExpiresIn=600
-    )
-
-    return {
-        'upload_url': url,
-        's3_key': key,
-        'expires_in': 600
+    content_type = photo.content_type
+    if content_type not in PHOTO_EXTENSIONS:
+        raise HTTPException(415, 'Photo must be JPEG, PNG or WebP.')
+    content = photo.file.read(PHOTO_MAX_BYTES + 1)
+    if len(content) > PHOTO_MAX_BYTES:
+        raise HTTPException(413, 'Photo must be at most 5 MB.')
+    if not content:
+        raise HTTPException(400, 'Photo must not be empty.')
+    matches_type = {
+        'image/jpeg': content.startswith(b'\xff\xd8\xff'),
+        'image/png': content.startswith(b'\x89PNG\r\n\x1a\n'),
+        'image/webp': content.startswith(b'RIFF') and content[8:12] == b'WEBP',
     }
+    if not matches_type[content_type]:
+        raise HTTPException(400, 'Photo content does not match its image type.')
 
-
-def register_photo(pet_id, data, user):
-    if not data.s3_key.startswith(f'pets/{pet_id}/'):
-        raise HTTPException(
-            400,
-            'Invalid photo object key.'
-        )
-
-    # Verifica se o usuário pode gerenciar esse pet.
-    with connect() as conn:
-        _get_accessible_pet(conn, pet_id, user)
-
-    client, settings = ensure_s3()
-
+    # A stable per-pet key makes retrying the same file reuse the existing photo.
+    digest = hashlib.sha256(content).hexdigest()
+    key = f'pets/{pet_id}/{digest}.{PHOTO_EXTENSIONS[content_type]}'
     try:
-        obj = client.head_object(
-            Bucket=settings.s3_bucket,
-            Key=data.s3_key
-        )
-
-        if (
-            obj['ContentLength'] > 5 * 1024 * 1024
-            or obj.get('ContentType') not in (
-                'image/jpeg',
-                'image/png',
-                'image/webp'
-            )
-        ):
-            client.delete_object(
-                Bucket=settings.s3_bucket,
-                Key=data.s3_key
-            )
-
-            raise HTTPException(
-                400,
-                'Photo must be JPEG, PNG or WebP and at most 5 MB.'
-            )
-
-    except HTTPException:
-        raise
-
-    except Exception:
-        raise HTTPException(
-            400,
-            'Uploaded photo could not be verified.'
-        ) from None
-
-    with connect() as conn:
-        _get_accessible_pet(conn, pet_id, user)
-
-        count = conn.execute(
-            'SELECT count(*) AS n FROM pet_photos WHERE pet_id=%s',
-            (pet_id,)
-        ).fetchone()['n']
-
-        if count >= 5:
-            client.delete_object(
-                Bucket=settings.s3_bucket,
-                Key=data.s3_key
-            )
-
-            raise HTTPException(
-                409,
-                'A pet can have at most five photos.'
-            )
-
-        row = conn.execute(
-            '''
-            INSERT INTO pet_photos(
-                pet_id,
-                s3_key,
-                is_primary,
-                position
-            )
-            VALUES (%s, %s, %s, %s)
-            RETURNING *
-            ''',
-            (pet_id, data.s3_key, count == 0, count)
-        ).fetchone()
-
+        client, settings = ensure_s3()
         url = client.generate_presigned_url(
-            'get_object',
-            Params={
-                'Bucket': settings.s3_bucket,
-                'Key': data.s3_key
-            },
-            ExpiresIn=3600
+            'get_object', Params={'Bucket': settings.s3_bucket, 'Key': key}, ExpiresIn=3600,
         )
-
-        return {
-            **row,
-            'url': url
-        }
+        with connect() as conn:
+            # Serialize uploads for this pet to enforce the five-photo limit.
+            _get_accessible_pet(conn, pet_id, user, lock=True)
+            row = conn.execute(
+                'SELECT * FROM pet_photos WHERE pet_id=%s AND s3_key=%s',
+                (pet_id, key),
+            ).fetchone()
+            if not row:
+                count = conn.execute(
+                    'SELECT count(*) AS n FROM pet_photos WHERE pet_id=%s', (pet_id,)
+                ).fetchone()['n']
+                if count >= 5:
+                    raise HTTPException(409, 'A pet can have at most five photos.')
+                client.put_object(
+                    Bucket=settings.s3_bucket, Key=key, Body=content, ContentType=content_type,
+                )
+                try:
+                    # A savepoint keeps the outer pet lock if insertion fails.
+                    with conn.transaction():
+                        row = conn.execute(
+                            'INSERT INTO pet_photos(pet_id,s3_key,is_primary,position) '
+                            'VALUES (%s,%s,%s,%s) RETURNING *',
+                            (pet_id, key, count == 0, count),
+                        ).fetchone()
+                except psycopg.Error:
+                    # Only compensate while the lock is known to be held. An
+                    # uncertain connection/commit must not delete a retry's object.
+                    if conn.info.transaction_status == TransactionStatus.INTRANS:
+                        try:
+                            client.delete_object(Bucket=settings.s3_bucket, Key=key)
+                        except (BotoCoreError, ClientError):
+                            logger.exception('photo_upload_cleanup_failed')
+                    raise
+        return {**row, 'url': url}
+    except (BotoCoreError, ClientError, psycopg.Error):
+        logger.exception('photo_upload_failed')
+        raise HTTPException(503, 'Photo could not be saved. Please try again.') from None

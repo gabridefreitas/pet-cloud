@@ -1,6 +1,8 @@
 import boto3
 from fastapi import HTTPException
+
 from petcloud.config import get_settings
+
 
 def photos_for(conn, pet_id):
     settings = get_settings()
@@ -20,21 +22,10 @@ def organization_dict(row):
     return {**row, 'logo_url': None}
 
 def pet_details(conn, row):
-    organization = None
-
-    if row['organization_id']:
-        org = conn.execute(
-            'SELECT * FROM organizations WHERE id=%s',
-            (row['organization_id'],)
-        ).fetchone()
-
-        if org:
-            organization = organization_dict(org)
-
-    return {
-        **pet_dict(conn, row),
-        'organization': organization
-    }
+    org = conn.execute(
+        'SELECT * FROM organizations WHERE id=%s', (row['organization_id'],)
+    ).fetchone()
+    return {**pet_dict(conn, row), 'organization': organization_dict(org)}
 
 def adoption_details(conn,row):
     pet=conn.execute('SELECT * FROM pets WHERE id=%s',(row['pet_id'],)).fetchone()
