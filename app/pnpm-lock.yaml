@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      aws-rum-web:
+        specifier: ^3.2.1
+        version: 3.2.1
       lucide-react:
         specifier: ^1.72.0
         version: 1.72.0(@types/react@19.3.0)(react@19.3.0)
@@ -50,6 +53,23 @@ importers:
         version: 8.3.4(@types/node@24.19.2)(jiti@2.7.0)
 
 packages:
+
+  '@aws-crypto/sha256-js@5.2.0':
+    resolution: {integrity: sha512-FFQQyu7edu4ufvIZ+OadFpHHOt+eSTBaYaki44c+akjg7qZg9oOQeLlk77F6tSYqjDAFClrHJk9tMf0HdVyOvA==}
+    engines: {node: '>=16.0.0'}
+
+  '@aws-crypto/util@5.2.0':
+    resolution: {integrity: sha512-4RkU9EsI6ZpBve5fseQlGNUWKMa1RLPQ1dnjnQoe07ldfIzcsGb5hC5W0Dm7u423KWzawlrpbjXBrXCEv9zazQ==}
+
+  '@aws-rum/web-core@3.2.1':
+    resolution: {integrity: sha512-i9wZrQYAaJNueBbHJsH04eFn7q+umtOmsm21i9kur2YYCsvGhOFADifbBW1vpv0TfO1nKfHjPMdbvb9AeiKVOA==}
+
+  '@aws-rum/web-slim@3.2.1':
+    resolution: {integrity: sha512-CbNAuqWFvQ2VlA6m/aWvPylkT0TR+vBIP8RtP1/nnxinJah42vgIb4EbwFX8tAkzWkOIOpAqj0EeqTs9RopsbA==}
+
+  '@aws-sdk/types@3.975.1':
+    resolution: {integrity: sha512-7rGxUkCB2QPoQOeJmonmAICTN2zrH+fpmi1p4Iwu72lnxNaMhOgqcbpyddifnM1DBb19TWQ1u6z/XjkaFNEDWw==}
+    engines: {node: '>=20.0.0'}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -291,6 +311,55 @@ packages:
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
 
+  '@rrweb/record@2.0.0-alpha.20':
+    resolution: {integrity: sha512-marVOU3Lc285mwLCp+vI6M/eJ+wZ6lcTa7fX0zcdmBsM+j5loXmMQjkmIvkji5+lAbkq5/w2cwto3GS0TaCjtg==}
+
+  '@rrweb/types@2.2.2':
+    resolution: {integrity: sha512-b9BNYEBcQF9dGQ5JJOoqBEFM7HlLmOdKgCfS2qkQj3gevF1wyuJIGPDGpaAYpl0H24fFOHGw6IdbYH6qrZNk1w==}
+
+  '@rrweb/utils@2.2.2':
+    resolution: {integrity: sha512-C078kPGG4iJ6uuSPELy/RkXZ6Ge3rUsSrX0KYzbtSjoCwMErrqF0RMbWjxpUROI0Hx7ewKeiDTp+Og9AYzYzjg==}
+
+  '@smithy/core@3.41.0':
+    resolution: {integrity: sha512-fuZ34H1uizS3WgcX9VXG7Uy8od5A5/kCc+CR3NkHLNm2H/BE9AUHG02VIdu8ZB7FYhLqsr/RZbqAoXuOCg/Oxg==}
+    engines: {node: '>=18.0.0'}
+
+  '@smithy/fetch-http-handler@5.8.1':
+    resolution: {integrity: sha512-h8BdMUrUBhMhMaeK7QqAdINRZezCGuYOCpcOZZ1ewxbHST9rdTd09xwNpvLTYfzDRehxQiReK4SKbdYZxBA+ew==}
+    engines: {node: '>=18.0.0'}
+
+  '@smithy/is-array-buffer@2.2.0':
+    resolution: {integrity: sha512-GGP3O9QFD24uGeAXYUjwSTXARoqpZykHadOmA8G5vfJPK0/DC67qa//0qvqrJzL1xc8WQWX7/yc7fwudjPHPhA==}
+    engines: {node: '>=14.0.0'}
+
+  '@smithy/protocol-http@5.6.2':
+    resolution: {integrity: sha512-Asd04MaxODN6FNY8EPTeCAM4kPNi3jDUAjZU0Y4F9rHvpLUrrUo7KLcxFgSthywFr6dZfIyDLIJda6jxmVTk5w==}
+    engines: {node: '>=18.0.0'}
+
+  '@smithy/querystring-builder@4.5.2':
+    resolution: {integrity: sha512-TLuVW4cGFCj+LirJylCVcFwxcUCpZ5Av0I7K9k/xhm6v6zAUeXSNuZ9e2QKuxcwkgrejL8LZvQTJy42pmq5bOg==}
+    engines: {node: '>=18.0.0'}
+
+  '@smithy/signature-v4@5.7.5':
+    resolution: {integrity: sha512-WPjdr5oWOk1LArpI4pavu+fSo+/evi0Re1olxGvqwuZopd4gYR1UGCi+Soyn/IjmafqbWs+ZC+3AKxJS3ZpwUg==}
+    engines: {node: '>=18.0.0'}
+
+  '@smithy/types@4.20.0':
+    resolution: {integrity: sha512-lCA6QG22dPk9ecHbv91jDQZsmtPUjdS1aE2Il6NNPqe7DrYc0dZQi6DhcESk2KYXH2sp5xbAcGdYMZDFnuzA2A==}
+    engines: {node: '>=18.0.0'}
+
+  '@smithy/util-buffer-from@2.2.0':
+    resolution: {integrity: sha512-IJdWBbTcMQ6DA0gdNhh/BwrLkDR+ADW5Kr1aZmd4k3DIF6ezMV4R2NIAmT08wQJ3yUK82thHWmC/TnK/wpMMIA==}
+    engines: {node: '>=14.0.0'}
+
+  '@smithy/util-hex-encoding@3.0.0':
+    resolution: {integrity: sha512-eFndh1WEK5YMUYvy3lPlVmYY/fZcQE1D8oSf41Id2vCeIkKJXPcYDCZD+4+xViI6b1XSd7tE+s5AmXzz5ilabQ==}
+    engines: {node: '>=16.0.0'}
+
+  '@smithy/util-utf8@2.3.0':
+    resolution: {integrity: sha512-R8Rdn8Hy72KKcebgLiv8jQcQkXoLMOGGv5uI1/k0l+snqkOzQ1R0ChUBCxWMlBsFMekWjq0wRudIweFs7sKT5A==}
+    engines: {node: '>=14.0.0'}
+
   '@tailwindcss/node@4.3.5':
     resolution: {integrity: sha512-yT53FzV4ke0cr/BguDxhWMpm5MJu1O2muzk+tKw6lKHjODAsYArBbWwFbJiaksfzFv1tpkO9QHGzmfs1hJT66g==}
 
@@ -384,6 +453,9 @@ packages:
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7 || ^8
 
+  '@types/css-font-loading-module@0.0.7':
+    resolution: {integrity: sha512-nl09VhutdjINdWyXxHWN/w9zlNCfr60JUqJbd24YXUuCwgeL0TpFSdElCwb6cxfB6ybE19Gjj4g0jsgkXxKv1Q==}
+
   '@types/node@24.19.2':
     resolution: {integrity: sha512-93d49wCWJkCyN87MxLpNN6KXPCwFw7bVUg79mGUV1OS40JGWwVCr8n61DXCSqz7CV6/VfPkb7xec7uP2M+QHWQ==}
 
@@ -411,6 +483,16 @@ packages:
       oxc-transform-react:
         optional: true
 
+  '@xstate/fsm@1.6.5':
+    resolution: {integrity: sha512-b5o1I6aLNeYlU/3CPlj/Z91ybk1gUsKT+5NAJI+2W4UjvS5KLG28K9v5UvNoFVjHV8PajVZ00RH3vnjyQO7ZAw==}
+
+  aws-rum-web@3.2.1:
+    resolution: {integrity: sha512-DBMYmZPBfCtK1ikXjGP5OE9yqiOymtHibn6BO3IFzK91td2tflYaq3ecjv+FDmai6uPXjjF7xjmdhK7gvVoa9A==}
+
+  base64-arraybuffer@1.0.2:
+    resolution: {integrity: sha512-I3yl4r9QB5ZRY3XuJVEPfc2XhZO6YweFPI+UovAzn+8/hb3oJ6lnysaFcjVpkCPfVWFUDvoZ8kmVDP7WyRtYtQ==}
+    engines: {node: '>= 0.6.0'}
+
   cookie@1.1.1:
     resolution: {integrity: sha512-ei8Aos7ja0weRpFzJnEA9UHJ/7XQmqglbRwnf2ATjcB9Wq874VKH9kfjjirM6UhU2/E5fFYadylyhFldcqSidQ==}
     engines: {node: '>=18'}
@@ -434,6 +516,9 @@ packages:
     peerDependenciesMeta:
       picomatch:
         optional: true
+
+  fflate@0.4.9:
+    resolution: {integrity: sha512-zdxgIEddhfsyCaWpJ2SdXEP8ZMrKJ6+5jl4OupODcywU0IhRk6gdXuVGcPICyfx2H97hVK7xmJtRLPjkxAX8Vw==}
 
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
@@ -533,6 +618,9 @@ packages:
   magic-string@1.4.5:
     resolution: {integrity: sha512-oLLC2+YvQUfAa+vxoufE/yc1icb87M9iXIRqAoR/2EhE/8cb3SF/+Gi0c2By1B+5Vz2e2vQtUvHiu1+63Znh+w==}
 
+  mitt@3.0.1:
+    resolution: {integrity: sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw==}
+
   nanoid@3.3.20:
     resolution: {integrity: sha512-uKdg2G3GNCKQn9byYOpxbGqrT2fGO5KRt5J/8b3pok8rT6qxGWF6hxMyJiEYtAf+FVyYuD9hRaDqX5uPFYJ4ZQ==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
@@ -560,6 +648,10 @@ packages:
 
   postcss@8.5.30:
     resolution: {integrity: sha512-zkd+e9S1AQHhmaBKye9zlFHWjOwVgqXl1q3ECYy8561K7qxR2cREf/STLskulBFd78k6AOFeA+ff1TtEzk9bAA==}
+    engines: {node: ^10 || ^12 || >=14}
+
+  postcss@8.5.33:
+    resolution: {integrity: sha512-RVHEU9/Pp1Fnjr/MpAJsZoADukCKhfIi15OunEYiGktIkYLkPVvC1sioWolGDS7XByMTx9m/IGbro0Js13zhnQ==}
     engines: {node: ^10 || ^12 || >=14}
 
   react-dom@19.3.0:
@@ -593,11 +685,29 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
+  rrdom@0.1.7:
+    resolution: {integrity: sha512-ZLd8f14z9pUy2Hk9y636cNv5Y2BMnNEY99wxzW9tD2BLDfe1xFxtLjB4q/xCBYo6HRe0wofzKzjm4JojmpBfFw==}
+
+  rrdom@2.2.2:
+    resolution: {integrity: sha512-hVe7bm9dw8Rluj1MIKh6fPDkc7RC5ri7PQi5eggXd3SN8WDt+uoNtceSIZC6ouMXzjqoMkQYJmIKmQEFc0mHCw==}
+
+  rrweb-snapshot@2.2.2:
+    resolution: {integrity: sha512-/0w4Xzd/Tw5a80dmEmv8/YkFitJYoMOnbtmt0jCAEdZ1w0nDSw5hvf59E/oDLy+z+x+vCcT0ibI+IYWeuCHegQ==}
+
+  rrweb@2.0.0-alpha.4:
+    resolution: {integrity: sha512-wEHUILbxDPcNwkM3m4qgPgXAiBJyqCbbOHyVoNEVBJzHszWEFYyTbrZqUdeb1EfmTRC2PsumCIkVcomJ/xcOzA==}
+
+  rrweb@2.2.2:
+    resolution: {integrity: sha512-LUvR1mbcTTaNkn5OiR0r2neuH86quaQsmucT07N4Yd7YFdxPtr9qMQ2e//1FkbWKa1L3JGmPIQtgv83VPJe3mQ==}
+
   scheduler@0.28.0:
     resolution: {integrity: sha512-juorfCmIkIw8tT+p5BXSm6PJjQF/ycEYmKyzURCIt/RaZIhL+PulbQ9Yu2z1HdOJDdqDTlxA1+xKBmHXJsczAw==}
 
   set-cookie-parser@2.7.3:
     resolution: {integrity: sha512-irZHtTqurLna57KQG/s+fzOwv/J6XSH4cs8M/vsrY3uCaQ3S6+QJguAH0WdN47SXlk82voMZ4naWMQf8fdEoIg==}
+
+  shimmer@1.2.1:
+    resolution: {integrity: sha512-sQTKC1Re/rM6XyFM6fIAGHRPVGvyXfgzIDvzoq608vM+jeyVD0Tu1E6Np0Kc2zAIFWIj963V2800iF/9LPieQw==}
 
   source-map-js@1.2.2:
     resolution: {integrity: sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==}
@@ -614,6 +724,9 @@ packages:
     resolution: {integrity: sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g==}
     engines: {node: '>=12.0.0'}
 
+  tslib@2.9.1:
+    resolution: {integrity: sha512-a4Ux9VKuIMHsOS7ENbEq6hK2ZGYIT27Rtl0E4eD9KqwxhKiQeMZE/9xb3IdYwWaSOyIBQLExhQgXDTYoiCxnWA==}
+
   typescript@6.0.3:
     resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
     engines: {node: '>=14.17'}
@@ -621,6 +734,11 @@ packages:
 
   undici-types@7.24.6:
     resolution: {integrity: sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==}
+
+  uuid@9.0.1:
+    resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==}
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+    hasBin: true
 
   vite@8.3.4:
     resolution: {integrity: sha512-IftLE8phJhdNRIGNEV4JCCvfNScoZQVfcXaN8TQropWGJtOHcu+iAB9pHcuGvmEb/kddw0LBe/jS8ztdC6xdiQ==}
@@ -665,7 +783,45 @@ packages:
       yaml:
         optional: true
 
+  web-vitals@4.2.4:
+    resolution: {integrity: sha512-r4DIlprAGwJ7YM11VZp4R884m0Vmgr6EAKe3P+kO0PPj3Unqyvv59rczf6UiGcb9Z8QxZVcqKNwv/g0WNdWwsw==}
+
 snapshots:
+
+  '@aws-crypto/sha256-js@5.2.0':
+    dependencies:
+      '@aws-crypto/util': 5.2.0
+      '@aws-sdk/types': 3.975.1
+      tslib: 2.9.1
+
+  '@aws-crypto/util@5.2.0':
+    dependencies:
+      '@aws-sdk/types': 3.975.1
+      '@smithy/util-utf8': 2.3.0
+      tslib: 2.9.1
+
+  '@aws-rum/web-core@3.2.1':
+    dependencies:
+      '@aws-crypto/sha256-js': 5.2.0
+      '@rrweb/record': 2.0.0-alpha.20
+      '@smithy/fetch-http-handler': 5.8.1
+      '@smithy/protocol-http': 5.6.2
+      '@smithy/querystring-builder': 4.5.2
+      '@smithy/signature-v4': 5.7.5
+      '@smithy/util-hex-encoding': 3.0.0
+      rrweb: 2.0.0-alpha.4
+      shimmer: 1.2.1
+      uuid: 9.0.1
+      web-vitals: 4.2.4
+
+  '@aws-rum/web-slim@3.2.1':
+    dependencies:
+      '@aws-rum/web-core': 3.2.1
+
+  '@aws-sdk/types@3.975.1':
+    dependencies:
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
@@ -792,6 +948,65 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.1': {}
 
+  '@rrweb/record@2.0.0-alpha.20':
+    dependencies:
+      '@rrweb/types': 2.2.2
+      '@rrweb/utils': 2.2.2
+      rrweb: 2.2.2
+
+  '@rrweb/types@2.2.2': {}
+
+  '@rrweb/utils@2.2.2': {}
+
+  '@smithy/core@3.41.0':
+    dependencies:
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@smithy/fetch-http-handler@5.8.1':
+    dependencies:
+      '@smithy/core': 3.41.0
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@smithy/is-array-buffer@2.2.0':
+    dependencies:
+      tslib: 2.9.1
+
+  '@smithy/protocol-http@5.6.2':
+    dependencies:
+      '@smithy/core': 3.41.0
+      tslib: 2.9.1
+
+  '@smithy/querystring-builder@4.5.2':
+    dependencies:
+      '@smithy/core': 3.41.0
+      tslib: 2.9.1
+
+  '@smithy/signature-v4@5.7.5':
+    dependencies:
+      '@smithy/core': 3.41.0
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@smithy/types@4.20.0':
+    dependencies:
+      tslib: 2.9.1
+
+  '@smithy/util-buffer-from@2.2.0':
+    dependencies:
+      '@smithy/is-array-buffer': 2.2.0
+      tslib: 2.9.1
+
+  '@smithy/util-hex-encoding@3.0.0':
+    dependencies:
+      tslib: 2.9.1
+
+  '@smithy/util-utf8@2.3.0':
+    dependencies:
+      '@smithy/util-buffer-from': 2.2.0
+      tslib: 2.9.1
+
   '@tailwindcss/node@4.3.5':
     dependencies:
       '@jridgewell/remapping': 2.3.5
@@ -860,6 +1075,8 @@ snapshots:
       tailwindcss: 4.3.5
       vite: 8.3.4(@types/node@24.19.2)(jiti@2.7.0)
 
+  '@types/css-font-loading-module@0.0.7': {}
+
   '@types/node@24.19.2':
     dependencies:
       undici-types: 7.24.6
@@ -877,6 +1094,15 @@ snapshots:
       '@rolldown/pluginutils': 1.0.1
       vite: 8.3.4(@types/node@24.19.2)(jiti@2.7.0)
 
+  '@xstate/fsm@1.6.5': {}
+
+  aws-rum-web@3.2.1:
+    dependencies:
+      '@aws-rum/web-core': 3.2.1
+      '@aws-rum/web-slim': 3.2.1
+
+  base64-arraybuffer@1.0.2: {}
+
   cookie@1.1.1: {}
 
   csstype@3.2.3: {}
@@ -891,6 +1117,8 @@ snapshots:
   fdir@6.5.0(picomatch@4.0.7):
     optionalDependencies:
       picomatch: 4.0.7
+
+  fflate@0.4.9: {}
 
   fsevents@2.3.3:
     optional: true
@@ -958,6 +1186,8 @@ snapshots:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.6.0
 
+  mitt@3.0.1: {}
+
   nanoid@3.3.20: {}
 
   oxlint@1.88.0:
@@ -987,6 +1217,12 @@ snapshots:
   picomatch@4.0.7: {}
 
   postcss@8.5.30:
+    dependencies:
+      nanoid: 3.3.20
+      picocolors: 1.1.1
+      source-map-js: 1.2.2
+
+  postcss@8.5.33:
     dependencies:
       nanoid: 3.3.20
       picocolors: 1.1.1
@@ -1034,9 +1270,45 @@ snapshots:
       '@rolldown/binding-win32-arm64-msvc': 1.2.13
       '@rolldown/binding-win32-x64-msvc': 1.2.13
 
+  rrdom@0.1.7:
+    dependencies:
+      rrweb-snapshot: 2.2.2
+
+  rrdom@2.2.2:
+    dependencies:
+      rrweb-snapshot: 2.2.2
+
+  rrweb-snapshot@2.2.2:
+    dependencies:
+      postcss: 8.5.33
+
+  rrweb@2.0.0-alpha.4:
+    dependencies:
+      '@rrweb/types': 2.2.2
+      '@types/css-font-loading-module': 0.0.7
+      '@xstate/fsm': 1.6.5
+      base64-arraybuffer: 1.0.2
+      fflate: 0.4.9
+      mitt: 3.0.1
+      rrdom: 0.1.7
+      rrweb-snapshot: 2.2.2
+
+  rrweb@2.2.2:
+    dependencies:
+      '@rrweb/types': 2.2.2
+      '@rrweb/utils': 2.2.2
+      '@types/css-font-loading-module': 0.0.7
+      '@xstate/fsm': 1.6.5
+      base64-arraybuffer: 1.0.2
+      mitt: 3.0.1
+      rrdom: 2.2.2
+      rrweb-snapshot: 2.2.2
+
   scheduler@0.28.0: {}
 
   set-cookie-parser@2.7.3: {}
+
+  shimmer@1.2.1: {}
 
   source-map-js@1.2.2: {}
 
@@ -1049,9 +1321,13 @@ snapshots:
       fdir: 6.5.0(picomatch@4.0.7)
       picomatch: 4.0.7
 
+  tslib@2.9.1: {}
+
   typescript@6.0.3: {}
 
   undici-types@7.24.6: {}
+
+  uuid@9.0.1: {}
 
   vite@8.3.4(@types/node@24.19.2)(jiti@2.7.0):
     dependencies:
@@ -1064,3 +1340,5 @@ snapshots:
       '@types/node': 24.19.2
       fsevents: 2.3.3
       jiti: 2.7.0
+
+  web-vitals@4.2.4: {}

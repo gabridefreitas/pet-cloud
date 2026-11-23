@@ -40,7 +40,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <TriangleAlert className="size-10 text-brand-500" aria-hidden />
         <h1 className="mt-4 text-xl font-semibold text-brand-900">Something went wrong</h1>
         <p className="mt-2 text-sm text-gray-600">
-          This page could not be displayed. The error was reported. Please reload and try again.
+          This page could not be displayed. Please reload and try again.
         </p>
         <button
           type="button"

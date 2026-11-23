@@ -1,5 +1,9 @@
 # Local execution: no database host port, no S3 and host bindings limited to loopback.
 services:
+  web:
+    build:
+      args:
+        VITE_RUM_ENABLED: "false"
   db:
     ports: !reset []
   api:

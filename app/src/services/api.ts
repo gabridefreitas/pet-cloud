@@ -10,6 +10,7 @@
  */
 import type { ApiErrorBody } from '../types'
 import { logger } from '../utils/logger'
+import { reportHttpFailure } from '../utils/telemetry'
 
 export const API_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
 
@@ -118,6 +119,7 @@ async function readJson(response: Response): Promise<unknown> {
 async function request<T>(method: HttpMethod, path: string, options: RequestOptions = {}): Promise<T> {
   const { query, body, signal, timeoutMs = DEFAULT_TIMEOUT_MS } = options
   const action = `${method} ${path}`
+  const url = buildUrl(path, query)
 
   const headers = new Headers({ Accept: 'application/json' })
   if (authToken) headers.set('Authorization', `Bearer ${authToken}`)
@@ -136,7 +138,7 @@ async function request<T>(method: HttpMethod, path: string, options: RequestOpti
 
   let response: Response
   try {
-    response = await fetch(buildUrl(path, query), {
+    response = await fetch(url, {
       method,
       headers,
       body: payload,
@@ -151,7 +153,8 @@ async function request<T>(method: HttpMethod, path: string, options: RequestOpti
       0,
       path,
     )
-    logger.error('API request failed', { action, error })
+    reportHttpFailure(apiError, method, url, 0)
+    logger.error('API request failed', { action, error, reportToRum: false })
     throw apiError
   }
 
@@ -160,14 +163,15 @@ async function request<T>(method: HttpMethod, path: string, options: RequestOpti
     const detail = isApiErrorBody(errorBody) ? errorBody.detail : null
     const apiError = new ApiError(errorMessage(detail, response.status), response.status, path, detail)
 
+    reportHttpFailure(apiError, method, url, response.status)
     if (response.status === 401) {
       setAuthToken(null)
       window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
     }
     if (response.status >= 500) {
-      logger.error('API server error', { action, error: apiError, data: { status: response.status } })
+      logger.error('API server error', { action, error: apiError, data: { status: response.status }, reportToRum: false })
     } else {
-      logger.warn('API request rejected', { action, data: { status: response.status } })
+      logger.warn('API request rejected', { action, data: { status: response.status }, reportToRum: false })
     }
     throw apiError
   }

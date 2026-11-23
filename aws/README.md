@@ -44,14 +44,23 @@ browser to render; no browser-to-S3 PUT or upload CORS configuration is needed.
 
 ## Monitoring: CloudWatch
 
-Backend: collect API access/error logs with the CloudWatch Agent on EC2 and
-configure log retention and alarms. EC2 metrics alone do not collect application
-exceptions; container logs need an explicit collection configuration.
+Backend: API JSON events already go to stdout/stderr. Configure Docker's
+`awslogs` driver on EC2, the log group/retention and an instance role allowed to
+write to it. Keep this driver out of local Compose: it requires AWS configuration
+and can prevent container startup when unavailable. No CloudWatch SDK is needed
+inside the API. Driver, IAM and log-group configuration remain deployment work.
 
-Frontend: create a CloudWatch RUM app monitor and install/configure its browser
-client to capture JavaScript errors and failed requests. Hosting in S3 does
-not automatically collect browser errors. RUM is not integrated in this starter;
-it needs the monitor's region, identity configuration, and app monitor ID.
+Frontend: the optional `aws-rum-web` integration captures browser/React errors
+and failed API requests. Create a RUM monitor with scoped Cognito/IAM access,
+then set the public `VITE_RUM_*` build variables documented in `app/README.md`.
+It defaults to disabled, stays off for missing/invalid settings, and is forced off
+by the local Compose overlay. S3/CloudFront hosting does not capture React errors.
+
+Infrastructure: enable the required EC2, RDS and CloudFront CloudWatch metrics,
+then configure dashboards/alarms. Extra metrics or OS logs may require an agent;
+standard service metrics do not replace API application logs or browser RUM.
+CloudTrail records AWS account/API activity separately. No AWS resources or
+monitoring services are activated by this implementation.
 
 ## References
 

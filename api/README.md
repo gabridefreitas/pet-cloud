@@ -107,7 +107,15 @@ photo upload returns 503; pet browsing still works.
 | `S3_BUCKET` | Existing private bucket for pet photos; empty disables uploads |
 | `AWS_REGION` | Bucket region |
 
-Each request writes JSON logs to stdout. `POST /logs` accepts browser error
-reports. HTTP errors use `{ "detail": ... }`, including validation errors with
-status 422. Set the frontend's optional `VITE_LOG_ENDPOINT` to
-`http://localhost:8000/logs` to send browser errors to the API.
+Each request writes a JSON event to stdout with method, route template, status
+and duration. Authentication failures, denied access and unexpected errors also
+produce structured events. Logs exclude submitted credentials, tokens, query strings,
+request/response bodies and raw exception messages. Exception type and code locations
+remain available for diagnosis. HTTP errors use `{ "detail": ... }`, including 422
+validation errors.
+
+Locally Docker keeps these logs without AWS credentials or a CloudWatch connection.
+For EC2, configure Docker's `awslogs` logging driver and the instance IAM permissions
+separately to forward stdout/stderr to CloudWatch Logs. The API needs no CloudWatch
+SDK or keys. Browser telemetry uses optional CloudWatch RUM directly; the former
+`POST /logs` endpoint has been removed.

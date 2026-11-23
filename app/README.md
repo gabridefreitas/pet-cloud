@@ -28,7 +28,11 @@ Set `VITE_API_URL` to the HTTPS API URL before building for AWS.
 | --- | --- |
 | `VITE_API_URL` | Base URL of the API (`http://localhost:8000` locally, the HTTPS EC2 URL in AWS). |
 | `VITE_USE_MOCKS` | `true` explicitly enables mocks; otherwise services use the real API. |
-| `VITE_LOG_ENDPOINT` | Optional URL that receives browser error logs as JSON (for CloudWatch). Empty disables it. |
+| `VITE_RUM_ENABLED` | `true` explicitly enables browser telemetry; default `false`. |
+| `VITE_RUM_APP_MONITOR_ID` | Public RUM app monitor UUID from AWS. |
+| `VITE_RUM_REGION` | Monitor and Cognito identity pool region, e.g. `us-east-1`. |
+| `VITE_RUM_IDENTITY_POOL_ID` | Public Cognito identity pool ID (`region:UUID`) authorized for this monitor. |
+| `VITE_RUM_APP_VERSION` | Release label for RUM events; defaults to `0.1.0`. |
 
 Vite embeds these values at build time. Never put secrets in them.
 
@@ -132,3 +136,28 @@ With mocks disabled and the demo database populated:
    an upload and retry without duplicating the pet or successful photos.
 7. Check empty results, missing pets, invalid/expired tokens, and API downtime.
    Run `pnpm lint` and `pnpm build` before opening a pull request.
+
+## Optional browser monitoring
+
+The official `aws-rum-web` client loads asynchronously only when explicitly enabled
+and all monitor/region/identity settings pass format validation. Disabled or incomplete
+configuration makes no RUM requests. The local Compose overlay forces it off.
+SDK initialization/reporting failures leave the application and console logging working.
+
+After creating a RUM monitor and its scoped Cognito/IAM identity in AWS, copy its
+public settings into these variables and rebuild the frontend. Never put AWS access
+keys in Vite variables. Configuration validates formats, not the existence of AWS resources.
+No monitor or permissions are provisioned by this application.
+
+RUM receives handled errors, uncaught browser errors, React boundary errors and API
+HTTP/network failures. Duplicate reports of the same error object are suppressed.
+Remote reports omit arbitrary exception messages, request/response bodies, headers,
+query strings and fragments; UUID path values are masked. Local console output remains
+available for debugging. Automatic HTTP/page-view/resource/session-replay collection
+and cookies are disabled; this integration targets errors rather than browsing analytics.
+Browser events go directly to RUM, with no API `/logs` proxy.
+
+Manual validation: run with `VITE_RUM_ENABLED=false`, then with it `true` and
+missing monitor settings; confirm login/catalog still work and DevTools Network
+shows no RUM or Cognito requests. Use an actual configured AWS monitor only in
+the later cloud validation phase to confirm events arrive in RUM.

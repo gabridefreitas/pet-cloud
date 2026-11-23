@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime, timedelta
 
 import jwt
@@ -8,6 +9,7 @@ from pwdlib import PasswordHash
 from petcloud.config import get_settings
 from petcloud.services.database import connect
 
+logger = logging.getLogger('petcloud.auth')
 password_hash=PasswordHash.recommended()
 def public_user(row):
     return {k:row.get(k) for k in ('id','email','full_name','phone','role','organization_id','city','state','created_at','updated_at')}
@@ -32,5 +34,8 @@ def login(data):
     with connect() as conn:
         user=conn.execute('SELECT * FROM users WHERE lower(email)=lower(%s)',(data.email,)).fetchone()
     if not user or not password_hash.verify(data.password,user['password_hash']):
+        logger.warning('authentication_failed', extra={
+            'event': 'authentication_failed', 'reason': 'invalid_credentials',
+        })
         raise HTTPException(401,'Email or password is incorrect.')
     return token_for(user)

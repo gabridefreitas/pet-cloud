@@ -17,6 +17,10 @@ def _get_accessible_pet(conn, pet_id, user, *, lock=False):
         (pet_id, user['organization_id'])
     ).fetchone()
     if not row:
+        logger.warning('access_denied', extra={
+            'event': 'access_denied', 'reason': 'pet_not_accessible',
+            'user_id': str(user['id']), 'organization_id': str(user['organization_id']),
+        })
         raise HTTPException(404, 'Pet not found.')
     return row
 
