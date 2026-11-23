@@ -3,12 +3,12 @@ import { Link } from 'react-router-dom'
 import { Breadcrumbs } from '../components/ui/Breadcrumbs'
 import { primaryButtonClass } from '../components/ui/styles'
 
-/** AWS services behind PetCloud, matching the deployment diagram in aws/README.md. */
+/** Planned AWS architecture, matching the deployment diagram in aws/README.md. */
 const ARCHITECTURE = [
   { icon: Globe, name: 'Amazon S3 + CloudFront', role: 'Serves this web application over HTTPS.' },
   { icon: Server, name: 'Amazon EC2', role: 'Runs the FastAPI REST API with the adoption business logic.' },
   { icon: Database, name: 'Amazon RDS (PostgreSQL)', role: 'Stores users, organizations, pets, and adoption requests.' },
-  { icon: HardDrive, name: 'Amazon S3', role: 'Stores pet photos, uploaded directly from the browser.' },
+  { icon: HardDrive, name: 'Amazon S3', role: 'Stores pet photos uploaded through the API. The browser displays images using signed URLs returned by the API.' },
   { icon: Activity, name: 'Amazon CloudWatch', role: 'Collects logs and metrics to monitor the platform.' },
 ]
 
@@ -35,8 +35,13 @@ export function AboutPage() {
 
         <section aria-labelledby="architecture-title">
           <h2 id="architecture-title" className="text-xl font-semibold text-brand-900">
-            Cloud architecture
+            Planned cloud architecture
           </h2>
+          <p className="mt-3 text-gray-700">
+            These services describe the AWS deployment target. Locally, the web application, API, and PostgreSQL
+            run in Docker, with S3 photo storage and browser RUM disabled. Cloud deployment and monitoring require
+            separate configuration and validation.
+          </p>
           <ul className="mt-5 grid gap-4 sm:grid-cols-2">
             {ARCHITECTURE.map(({ icon: Icon, name, role }) => (
               <li key={name} className="flex gap-4 rounded-xl border border-gray-200 p-5">
