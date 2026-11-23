@@ -20,6 +20,27 @@
 - `db/`: PostgreSQL initial schema and local demo data.
 - `aws/`: AWS deployment documentation and future infrastructure scripts.
 
+## Academic scope and implemented extras
+
+The Grade A coding scope focuses on the adopter's journey: browsing/filtering
+pets, viewing details and photos, submitting adoption requests and tracking their
+status. Authentication, validation and persistence support that journey.
+The final note on page 15 of [the proposal](PetCloud.pdf) is interpreted with the
+author's clarification that the journey refers to the person adopting.
+
+**Extra** identifies functionality implemented beyond that coding boundary:
+organization accounts and their portal, pet registration/status management,
+request review and photo uploads, plus breed/color/sex/location filters.
+Organization users appear in the [original architecture draft](<PetCloud Model.jpg>);
+their presence there does not expand the agreed Grade A implementation boundary.
+Keep the shipped extras and identify them as such in the academic presentation.
+
+Organizations contact the PetCloud team for assisted account creation. Public
+registration creates adopters only. Trusted team operators use the existing
+backend command to create an organization and its first member; there is no
+global administrator account or public organization signup. See the
+[provisioning procedure](db/README.md#assisted-organization-provisioning-extra).
+
 ## Local development
 
 Prerequisites: Docker with Compose, Node.js 22.12+, and pnpm 11.25.
@@ -85,10 +106,37 @@ No database reset or migration workflow is introduced here.
 
 ## AWS architecture
 
-The frontend build is served from a private S3 bucket through CloudFront.
-The API runs on EC2 and connects to RDS PostgreSQL. A separate S3 bucket
-stores pet images. CloudWatch collects backend logs; CloudWatch RUM handles
-browser errors once configured. See `aws/README.md` for the deployment plan.
+The deployment target serves the frontend build from private S3 through CloudFront,
+runs the API on EC2 and uses RDS PostgreSQL plus a separate photo bucket.
+These AWS placements and monitoring services require deployment validation;
+the working local stack is React, FastAPI and PostgreSQL in Docker.
+
+The following diagram documents the implemented application contract and its
+target AWS placement. It supplements the original proposal files, which remain
+unchanged; it is not evidence of cloud deployment.
+
+```mermaid
+flowchart LR
+  Hosting["Frontend assets: S3 / CloudFront (planned)"] --> Browser["React in the browser"]
+  Browser -->|"JSON API calls / multipart photo upload"| API["FastAPI: EC2 target"]
+  API -->|"SQL: application data and S3 object keys"| DB["PostgreSQL: RDS target"]
+  API -->|"Upload photo objects"| Images["Private S3 photo bucket"]
+  API -->|"JSON response: photos with signed GET URLs"| Browser
+  Browser -->|"GET image using returned signed URL"| Images
+```
+
+The API validates ownership and uploads images, stores permanent keys in
+`pet_photos.s3_key`, and generates expiring GET URLs in `photos[].url`. The browser
+renders those URLs and downloads the image bytes directly from S3. It neither
+uploads directly to S3 nor accesses PostgreSQL. Signed URLs are temporary bearer
+access, not permanent database values; no permanent AWS keys go to the browser.
+Photo fields are optional; local mode uses placeholders and disables upload.
+
+API logs already go to stdout/stderr; Docker `awslogs` forwarding remains cloud
+configuration. The optional browser RUM client is implemented but disabled locally.
+EC2/RDS/CloudFront metrics and CloudTrail are separate cloud configuration paths.
+See the [deployment plan](aws/README.md) and
+[security controls and delivery status](aws/security-case-study.md).
 
 The web app uses the real API by default for the catalog, authentication,
 pet management, and adoption requests. Set `VITE_USE_MOCKS=true` only for the

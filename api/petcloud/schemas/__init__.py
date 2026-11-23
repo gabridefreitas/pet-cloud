@@ -2,10 +2,10 @@
 """Pydantic models implementing the frontend contract in app/src/types/index.ts."""
 
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints
 
 Id = UUID
 IsoDateTime = datetime
@@ -169,7 +169,7 @@ class LoginInput(BaseModel):
 
 
 class RegisterInput(BaseModel):
-    full_name: str = Field(min_length=2, max_length=160)
+    full_name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=160)]
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
 

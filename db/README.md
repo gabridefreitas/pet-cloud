@@ -43,3 +43,37 @@ python -m scripts.seed_demo
 The seed also applies the schema, so it can run before starting the API.
 Only use this initial schema with an empty local database; updating existing
 schemas is outside this task's scope. The Docker volume persists between restarts.
+
+## Assisted organization provisioning (Extra)
+
+Organization accounts and their operational portal are implemented **Extra**
+functionality beyond the Grade A adopter journey. An organization contacts the
+PetCloud team, which provides its account and member access. Public registration
+creates adopters; there is no application administrator role or public NGO signup.
+
+With the local stack running, a trusted team operator can run the existing
+interactive backend command from the repository root:
+
+```sh
+docker compose exec api python -m scripts.create_organization
+```
+
+For a host-run API, run `python -m scripts.create_organization` from `api/`, using
+the intended API database configuration. The schema must already exist. The
+command asks for organization details, the first member's name/login email and
+a confirmed password (at least eight characters, prompted without echo). It
+creates the organization and linked member in one transaction and stores an
+Argon2 password hash. Do not put passwords in command arguments or documentation.
+Running this procedure writes to the selected database; it is not a seed reset.
+
+Members log in through `/login` and are redirected to `/organization`. The footer's
+Organization portal link leads to that guarded route; visitors are redirected to
+login, and adopter accounts do not gain organization access.
+
+The schema supports multiple members of one organization. They share that
+organization's pet/request queue and authorization boundary; members cannot act
+on another organization's records. Request decisions lock the row and accept
+only pending requests, preventing a second resolution of the same request.
+The command above provisions only the first member. Additional-member tooling,
+invitations and password-management flows are not implemented or added to the
+required Grade A backlog.

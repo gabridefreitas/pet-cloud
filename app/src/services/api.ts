@@ -22,7 +22,7 @@ export const API_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000')
 export const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
 
 const DEFAULT_TIMEOUT_MS = 10_000
-const TOKEN_STORAGE_KEY = USE_MOCKS ? 'petcloud.mock_access_token' : 'petcloud.access_token'
+export const TOKEN_STORAGE_KEY = USE_MOCKS ? 'petcloud.mock_access_token' : 'petcloud.access_token'
 
 /** Dispatched on `window` when the API answers 401, so the UI can redirect to login. */
 export const UNAUTHORIZED_EVENT = 'petcloud:unauthorized'

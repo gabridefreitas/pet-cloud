@@ -22,6 +22,11 @@ export function RegisterPage() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
+    const name = fullName.trim()
+    if (name.length < 2 || name.length > 160) {
+      setError('Enter a full name with 2 to 160 characters.')
+      return
+    }
     if (password.length < MIN_PASSWORD_LENGTH) {
       setError(`The password must have at least ${MIN_PASSWORD_LENGTH} characters.`)
       return
@@ -29,7 +34,7 @@ export function RegisterPage() {
     setSubmitting(true)
     setError(null)
     try {
-      const user = await register({ full_name: fullName, email, password })
+      const user = await register({ full_name: name, email, password })
       navigate(postLoginPath(redirect, user), { replace: true })
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not create the account. Please try again.')
