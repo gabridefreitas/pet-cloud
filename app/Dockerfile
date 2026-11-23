@@ -3,7 +3,7 @@ WORKDIR /app
 COPY app/package.json app/pnpm-lock.yaml ./
 RUN corepack enable && pnpm install --frozen-lockfile
 COPY app ./
-ENV VITE_API_URL=http://localhost:8000
+ARG VITE_API_URL=http://localhost:8000
 ENV VITE_USE_MOCKS=false
 ARG VITE_RUM_ENABLED=false
 ARG VITE_RUM_APP_MONITOR_ID=
